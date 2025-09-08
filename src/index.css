@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- PRINT AND PDF STYLES --- */
+.pdf-render-mode,
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body, html {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .dark, body.dark {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  
+  .dark *, * {
+    color: #000000 !important;
+    border-color: #e5e7eb !important;
+  }
+
+  /* Reset all backgrounds */
+  .bg-white, .bg-gray-50, .bg-slate-800, .bg-slate-900, .dark\:bg-slate-800, .dark\:bg-slate-900, .dark\:bg-slate-800\/50, .dark\:bg-slate-700\/50,
+  .bg-blue-50, .dark\:bg-blue-900\/30, .bg-yellow-50, .dark\:bg-yellow-900\/30, .bg-red-50, .dark\:bg-red-900\/30, .bg-green-50, .dark\:bg-green-900\/30,
+  .bg-orange-50, .dark\:bg-orange-900\/30, .bg-gray-50, .dark\:bg-slate-700\/50 {
+    background-color: #ffffff !important;
+  }
+
+  .shadow-md, .shadow-lg {
+    box-shadow: none !important;
+  }
+  
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .report-section, .report-room-container {
+    border: 1px solid #e5e7eb !important;
+    margin-bottom: 20px;
+    padding: 1rem;
+  }
+  
+  .report-image-container {
+    height: auto !important;
+    max-height: 250px !important; /* Reduced max-height to prevent clipping */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f9fafb !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    overflow: hidden;
+  }
+
+  .report-image {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important; /* CRITICAL: Respects aspect ratio */
+  }
+
+  /* Prevent page breaks inside these critical elements */
+  .report-photo-analysis, .report-room-container, .report-section {
+    page-break-inside: avoid !important;
+  }
+}
