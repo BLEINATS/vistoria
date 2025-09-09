@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Camera, Building, MapPin, FileText, Save } from 'lucide-react';
+import { X, Camera, Building, MapPin, User, FileText, Save } from 'lucide-react';
 import { Property } from '../../types';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
@@ -100,7 +100,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({ isOpen, onClose, onSubmit, 
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
-        return formData.name.trim() !== '' && formData.type;
+        return formData.name.trim() !== '' && formData.type !== '';
       case 2:
         return formData.address.trim() !== '';
       default:
