@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     getSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
+      async (_event, newSession) => {
         const currentUser = newSession?.user ?? null;
         setSession(newSession);
         setUser(currentUser);
