@@ -43,10 +43,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   useEffect(() => {
+    // Safety timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.warn('Auth loading timeout - setting loading to false');
+      setLoading(false);
+    }, 3000); // 3 seconds timeout
+
     // onAuthStateChange is the single source of truth.
     // It fires once on initial load and then on every auth event.
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (_event, newSession) => {
+        // Clear timeout since we got a response
+        clearTimeout(timeoutId);
+        
         try {
           const currentUser = newSession?.user ?? null;
           setSession(newSession);
@@ -72,6 +81,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     );
 
     return () => {
+      // Clear timeout on cleanup
+      clearTimeout(timeoutId);
       // Safely unsubscribe
       authListener?.subscription.unsubscribe();
     };
