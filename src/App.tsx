@@ -8,6 +8,7 @@ import CompareInspections from './pages/CompareInspections';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ResetPassword from './pages/ResetPassword';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import ToastContainer from './components/common/ToastContainer';
 
@@ -21,6 +22,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
