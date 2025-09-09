@@ -44,18 +44,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     const getSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      
-      const currentUser = data.session?.user ?? null;
-      setSession(data.session);
-      setUser(currentUser);
-      
-      if (currentUser) {
-        await fetchProfile(currentUser.id);
-      } else {
-        setProfile(null);
+      console.log('🔍 AuthContext: Iniciando getSession...');
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        console.log('📊 AuthContext: getSession resultado:', { 
+          hasSession: !!data.session,
+          userId: data.session?.user?.id,
+          error 
+        });
+        
+        const currentUser = data.session?.user ?? null;
+        setSession(data.session);
+        setUser(currentUser);
+        
+        if (currentUser) {
+          console.log('✅ AuthContext: Usuário encontrado, buscando perfil...');
+          await fetchProfile(currentUser.id);
+        } else {
+          console.log('❌ AuthContext: Nenhum usuário encontrado');
+          setProfile(null);
+        }
+      } catch (err) {
+        console.error('💥 AuthContext: Erro no getSession:', err);
+      } finally {
+        console.log('🏁 AuthContext: Finalizando loading');
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     getSession();
