@@ -44,7 +44,7 @@ const Login: React.FC = () => {
         setTimeout(() => {
           console.log('Navigating to dashboard...');
           navigate('/dashboard');
-        }, 100);
+        }, 500);
         setLoading(false);
       } else {
         console.warn('Login completed but no user data received');
