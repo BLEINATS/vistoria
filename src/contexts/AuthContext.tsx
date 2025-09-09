@@ -43,54 +43,40 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   useEffect(() => {
-    // Safety timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      console.warn('Auth loading timeout - setting loading to false');
+    const getSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      
+      const currentUser = data.session?.user ?? null;
+      setSession(data.session);
+      setUser(currentUser);
+      
+      if (currentUser) {
+        await fetchProfile(currentUser.id);
+      } else {
+        setProfile(null);
+      }
       setLoading(false);
-    }, 3000); // 3 seconds timeout
+    };
 
-    // onAuthStateChange is the single source of truth.
-    // It fires once on initial load and then on every auth event.
+    getSession();
+
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        console.log('AuthContext: onAuthStateChange event:', event, 'session:', newSession?.user?.id);
+        const currentUser = newSession?.user ?? null;
+        setSession(newSession);
+        setUser(currentUser);
         
-        // Clear timeout since we got a response
-        clearTimeout(timeoutId);
-        
-        try {
-          const currentUser = newSession?.user ?? null;
-          console.log('AuthContext: Setting user:', currentUser?.id);
-          setSession(newSession);
-          setUser(currentUser);
-
-          if (currentUser) {
-            console.log('AuthContext: Fetching profile for user:', currentUser.id);
-            await fetchProfile(currentUser.id);
-          } else {
-            console.log('AuthContext: No user, clearing profile');
-            setProfile(null);
-          }
-        } catch (e) {
-          console.error("Error in onAuthStateChange handler:", e);
-          // Reset state on error to prevent inconsistent UI
-          setUser(null);
-          setSession(null);
+        if (currentUser) {
+          await fetchProfile(currentUser.id);
+        } else {
           setProfile(null);
-        } finally {
-          // This GUARANTEES that loading is set to false after the initial check,
-          // preventing the infinite loading screen.
-          console.log('AuthContext: Setting loading to false');
-          setLoading(false);
         }
+        setLoading(false);
       }
     );
 
     return () => {
-      // Clear timeout on cleanup
-      clearTimeout(timeoutId);
-      // Safely unsubscribe
-      authListener?.subscription.unsubscribe();
+      authListener.subscription.unsubscribe();
     };
   }, [fetchProfile]);
 

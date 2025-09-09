@@ -27,10 +27,7 @@ const Login: React.FC = () => {
         password,
       });
 
-      console.log('Login result:', { data, error });
-
       if (error) {
-        console.error('Login error:', error);
         if (error.message.includes('Invalid login credentials') || error.code === 'invalid_credentials') {
           setError('Email ou senha incorretos. Se você acabou de se cadastrar, verifique seu email para confirmar a conta.');
         } else {
@@ -38,9 +35,8 @@ const Login: React.FC = () => {
         }
         setLoading(false);
       } else {
-        console.log('Login bem-sucedido');
         setLoading(false);
-        navigate('/dashboard', { replace: true }); // replace evita voltar para login
+        navigate('/dashboard', { replace: true });
       }
     } catch (err) {
       console.error('Unexpected login error:', err);
