@@ -52,18 +52,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // onAuthStateChange is the single source of truth.
     // It fires once on initial load and then on every auth event.
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (_event, newSession) => {
+      async (event, newSession) => {
+        console.log('AuthContext: onAuthStateChange event:', event, 'session:', newSession?.user?.id);
+        
         // Clear timeout since we got a response
         clearTimeout(timeoutId);
         
         try {
           const currentUser = newSession?.user ?? null;
+          console.log('AuthContext: Setting user:', currentUser?.id);
           setSession(newSession);
           setUser(currentUser);
 
           if (currentUser) {
+            console.log('AuthContext: Fetching profile for user:', currentUser.id);
             await fetchProfile(currentUser.id);
           } else {
+            console.log('AuthContext: No user, clearing profile');
             setProfile(null);
           }
         } catch (e) {
@@ -75,6 +80,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } finally {
           // This GUARANTEES that loading is set to false after the initial check,
           // preventing the infinite loading screen.
+          console.log('AuthContext: Setting loading to false');
           setLoading(false);
         }
       }
