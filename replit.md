@@ -13,17 +13,19 @@ A React/TypeScript application for property inspections with Supabase backend in
 
 ## Current State
 - ✅ Dependencies installed with npm (using --legacy-peer-deps for echarts compatibility)
-- ✅ Vite dev server configured for Replit (host 0.0.0.0, port 5000)
+- ✅ Vite dev server configured for Replit (host 0.0.0.0, port 5000, allowedHosts: 'all')
 - ✅ Environment variables configured (.env file with Supabase keys)
 - ✅ Development workflow set up (npm run dev)
 - ✅ Application running successfully
 - ✅ Deployment configuration set up (autoscale with build/serve)
+- ✅ Host blocking issue resolved
 
 ## Recent Changes (2025-09-09)
 - Configured Vite server for Replit environment (host: 0.0.0.0, port: 5000)
 - Installed dependencies with legacy peer deps to resolve echarts version conflict
 - Set up development workflow and deployment configuration
 - Added serve package for production deployment
+- Fixed host blocking issue by adding allowedHosts: 'all' to Vite config
 
 ## Key Features
 - Property management with photos
