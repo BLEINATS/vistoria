@@ -53,74 +53,106 @@ const Properties: React.FC = () => {
   );
 
   const handleSaveProperty = async (data: PropertyFormData) => {
+    console.log('🏠 Iniciando salvamento do imóvel:', data);
+    
     if (!user) {
-      console.error("User not available");
+      console.error("❌ Usuário não disponível");
+      alert("Erro: Usuário não autenticado");
       return;
     }
     
-    const { facadePhotoFile, id, ...propertyData } = data;
-    let facade_photo_url = propertyToEdit?.facadePhoto || null;
+    try {
+      const { facadePhotoFile, id, ...propertyData } = data;
+      let facade_photo_url = propertyToEdit?.facadePhoto || null;
 
-    if (facadePhotoFile) {
-      const fileExtension = facadePhotoFile.name.split('.').pop() || 'png';
-      const sanitizedFileName = facadePhotoFile.name
-        .replace(`.${fileExtension}`, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9_.-]/g, '-')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-');
-      
-      const filePath = `${user.id}/${Date.now()}-${sanitizedFileName}.${fileExtension}`;
+      // Upload da foto se existir
+      if (facadePhotoFile) {
+        console.log('📸 Fazendo upload da foto...');
+        const fileExtension = facadePhotoFile.name.split('.').pop() || 'png';
+        const sanitizedFileName = facadePhotoFile.name
+          .replace(`.${fileExtension}`, '')
+          .toLowerCase()
+          .replace(/[^a-z0-9_.-]/g, '-')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-');
+        
+        const filePath = `${user.id}/${Date.now()}-${sanitizedFileName}.${fileExtension}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('property_facades')
-        .upload(filePath, facadePhotoFile);
+        const { error: uploadError } = await supabase.storage
+          .from('property_facades')
+          .upload(filePath, facadePhotoFile);
 
-      if (uploadError) {
-        console.error('Error uploading photo:', uploadError);
-        return;
-      }
+        if (uploadError) {
+          console.error('❌ Erro no upload da foto:', uploadError);
+          alert(`Erro ao fazer upload da foto: ${uploadError.message}`);
+          return;
+        }
 
-      const { data: urlData } = supabase.storage
-        .from('property_facades')
-        .getPublicUrl(filePath);
-      
-      facade_photo_url = urlData.publicUrl;
+        console.log('✅ Foto enviada com sucesso');
+        const { data: urlData } = supabase.storage
+          .from('property_facades')
+          .getPublicUrl(filePath);
+        
+        facade_photo_url = urlData.publicUrl;
 
-      if (propertyToEdit?.facadePhoto) {
+        // Remove foto antiga se estava editando
+        if (propertyToEdit?.facadePhoto) {
+          const oldFilePath = propertyToEdit.facadePhoto.split('/property_facades/').pop();
+          if (oldFilePath) {
+            await supabase.storage.from('property_facades').remove([oldFilePath]);
+          }
+        }
+      } else if (!data.facadePhotoPreview && propertyToEdit?.facadePhoto) {
+        // Remove foto se foi removida na edição
         const oldFilePath = propertyToEdit.facadePhoto.split('/property_facades/').pop();
         if (oldFilePath) {
           await supabase.storage.from('property_facades').remove([oldFilePath]);
         }
+        facade_photo_url = null;
       }
-    } else if (!data.facadePhotoPreview && propertyToEdit?.facadePhoto) {
-      const oldFilePath = propertyToEdit.facadePhoto.split('/property_facades/').pop();
-      if (oldFilePath) {
-        await supabase.storage.from('property_facades').remove([oldFilePath]);
+
+      // Dados para o banco
+      const dbData = {
+        name: propertyData.name,
+        address: propertyData.address,
+        type: propertyData.type,
+        description: propertyData.description,
+        facade_photo_url: facade_photo_url,
+        user_id: user.id,
+      };
+
+      console.log('💾 Salvando no banco de dados:', dbData);
+
+      let result;
+      if (id) {
+        // Atualização
+        result = await supabase.from('properties').update(dbData).eq('id', id);
+        console.log('📝 Resultado da atualização:', result);
+      } else {
+        // Criação
+        result = await supabase.from('properties').insert(dbData);
+        console.log('➕ Resultado da criação:', result);
       }
-      facade_photo_url = null;
+
+      if (result.error) {
+        console.error('❌ Erro ao salvar no banco:', result.error);
+        alert(`Erro ao salvar imóvel: ${result.error.message}`);
+        return;
+      }
+
+      console.log('✅ Imóvel salvo com sucesso!');
+      
+      // Atualiza a lista e fecha o formulário
+      await fetchProperties();
+      setShowForm(false);
+      setPropertyToEdit(null);
+      
+      alert(id ? 'Imóvel atualizado com sucesso!' : 'Imóvel cadastrado com sucesso!');
+      
+    } catch (error) {
+      console.error('❌ Erro inesperado:', error);
+      alert(`Erro inesperado: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
-
-    const dbData = {
-      name: propertyData.name,
-      address: propertyData.address,
-      type: propertyData.type,
-      description: propertyData.description,
-      facade_photo_url: facade_photo_url,
-      user_id: user.id,
-    };
-
-    if (id) {
-      const { error } = await supabase.from('properties').update(dbData).eq('id', id);
-      if (error) console.error('Error updating property:', error);
-    } else {
-      const { error } = await supabase.from('properties').insert(dbData);
-      if (error) console.error('Error creating property:', error);
-    }
-
-    fetchProperties();
-    setShowForm(false);
-    setPropertyToEdit(null);
   };
 
   const handleOpenFormForCreate = () => {
