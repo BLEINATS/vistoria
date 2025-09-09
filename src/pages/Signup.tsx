@@ -37,7 +37,12 @@ const Signup: React.FC = () => {
         setError(error.message);
       } else {
         console.log('Signup successful');
-        setSuccess(true);
+        // Check if email confirmation is required
+        if (data.user && !data.session) {
+          setError('Conta criada! Verifique seu email para confirmar antes de fazer login.');
+        } else {
+          setSuccess(true);
+        }
       }
     } catch (err) {
       console.error('Unexpected signup error:', err);

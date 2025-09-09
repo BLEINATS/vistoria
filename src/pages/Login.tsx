@@ -27,7 +27,11 @@ const Login: React.FC = () => {
 
       if (error) {
         console.error('Login error:', error);
-        setError(error.message);
+        if (error.message.includes('Invalid login credentials') || error.code === 'invalid_credentials') {
+          setError('Email ou senha incorretos. Se você acabou de se cadastrar, verifique seu email para confirmar a conta.');
+        } else {
+          setError(error.message);
+        }
         setLoading(false);
       } else {
         console.log('Login successful, navigating to dashboard');
