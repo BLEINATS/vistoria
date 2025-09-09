@@ -29,8 +29,8 @@ const Properties: React.FC = () => {
       if (rpcError) {
         console.error('Error fetching properties from RPC:', rpcError);
         setProperties([]);
-      } else if (rpcData) {
-        const mappedProperties = rpcData.map(p => mapToProperty(p, p.profiles?.full_name)).filter(Boolean) as Property[];
+      } else if (rpcData && Array.isArray(rpcData)) {
+        const mappedProperties = rpcData.map((p: any) => mapToProperty(p, p.responsible_name)).filter(Boolean) as Property[];
         setProperties(mappedProperties);
       }
     } catch (error) {

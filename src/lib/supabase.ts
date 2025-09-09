@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { Property, InspectionSummary } from '../types';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL;
+const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Supabase URL and Anon Key must be defined in .env file');
@@ -122,7 +122,7 @@ export type Database = {
   };
 };
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Função para mapear do banco de dados para o tipo da aplicação
 export const mapToProperty = (row: any, responsibleName?: string | null): Property | null => {
@@ -136,7 +136,7 @@ export const mapToProperty = (row: any, responsibleName?: string | null): Proper
   
   const inspections = inspectionsData
     // Defensive filter: ensure each inspection object is valid before mapping.
-    .filter(i => i && i.id && i.created_at)
+    .filter((i: any) => i && i.id && i.created_at)
     .map((i: any): InspectionSummary => ({
       id: i.id,
       status: i.status,
