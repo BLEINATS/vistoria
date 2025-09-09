@@ -17,22 +17,34 @@ const Signup: React.FC = () => {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
+    try {
+      console.log('Attempting signup with:', { email, fullName });
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
         },
-      },
-    });
+      });
 
-    if (error) {
-      setError(error.message);
-    } else {
-      setSuccess(true);
+      console.log('Signup result:', { data, error });
+
+      if (error) {
+        console.error('Signup error:', error);
+        setError(error.message);
+      } else {
+        console.log('Signup successful');
+        setSuccess(true);
+      }
+    } catch (err) {
+      console.error('Unexpected signup error:', err);
+      setError('Erro inesperado durante o cadastro. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
