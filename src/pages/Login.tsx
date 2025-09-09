@@ -28,7 +28,7 @@ const Login: React.FC = () => {
       if (error) {
         console.error('Login error:', error);
         if (error.message.includes('Invalid login credentials') || error.code === 'invalid_credentials') {
-          setError('❌ LOGIN BLOQUEADO: Confirmação de email está ativada no Supabase. Para resolver: 1) Acesse supabase.com/dashboard 2) Vá em Authentication → Settings 3) Desabilite "Confirm email" 4) Salve e tente novamente');
+          setError('Email ou senha incorretos. Se você acabou de se cadastrar, verifique seu email para confirmar a conta.');
         } else {
           setError(error.message);
         }
@@ -108,28 +108,9 @@ const Login: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex w-full justify-center rounded-md bg-blue-600 px-3 py-2.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 mb-3"
+                className="flex w-full justify-center rounded-md bg-blue-600 px-3 py-2.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
               >
                 {loading ? 'Entrando...' : 'Entrar'}
-              </button>
-              
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!email) {
-                    setError('Digite seu email primeiro para resetar a senha');
-                    return;
-                  }
-                  const { error } = await supabase.auth.resetPasswordForEmail(email);
-                  if (error) {
-                    setError(`Erro ao enviar reset: ${error.message}`);
-                  } else {
-                    setError('✅ Email de reset enviado! Verifique sua caixa de entrada.');
-                  }
-                }}
-                className="flex w-full justify-center rounded-md bg-gray-100 px-3 py-2 text-sm font-semibold leading-6 text-gray-700 border border-gray-300 hover:bg-gray-50"
-              >
-                🔄 Resetar Senha
               </button>
             </div>
           </form>

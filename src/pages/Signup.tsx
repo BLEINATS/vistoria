@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Camera, Mail, Lock, User } from 'lucide-react';
 
 const Signup: React.FC = () => {
+  const navigate = useNavigate();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,7 +39,7 @@ const Signup: React.FC = () => {
         console.log('Signup successful');
         // Check if email confirmation is required
         if (data.user && !data.session) {
-          setError('✅ CONTA CRIADA! ❌ MAS login está bloqueado pela confirmação de email. Para resolver: 1) Acesse supabase.com/dashboard 2) Authentication → Settings 3) Desabilite "Confirm email" 4) Tente fazer login novamente');
+          setError('Conta criada! Verifique seu email para confirmar antes de fazer login.');
         } else {
           setSuccess(true);
         }
