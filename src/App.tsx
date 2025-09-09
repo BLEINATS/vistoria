@@ -1,5 +1,4 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout/Layout';
 import Properties from './pages/Properties';
 import Inspection from './pages/Inspection';
@@ -12,11 +11,7 @@ import Signup from './pages/Signup';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import ToastContainer from './components/common/ToastContainer';
 
-const AppLayout = () => (
-  <Layout>
-    <Outlet />
-  </Layout>
-);
+const AppLayout = () => <Layout />;
 
 function App() {
   return (
