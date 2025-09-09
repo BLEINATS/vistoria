@@ -38,7 +38,7 @@ const Signup: React.FC = () => {
         console.log('Signup successful');
         // Check if email confirmation is required
         if (data.user && !data.session) {
-          setError('Conta criada! Verifique seu email para confirmar antes de fazer login.');
+          setError('✅ CONTA CRIADA! ❌ MAS login está bloqueado pela confirmação de email. Para resolver: 1) Acesse supabase.com/dashboard 2) Authentication → Settings 3) Desabilite "Confirm email" 4) Tente fazer login novamente');
         } else {
           setSuccess(true);
         }
