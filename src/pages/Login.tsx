@@ -37,19 +37,10 @@ const Login: React.FC = () => {
           setError(error.message);
         }
         setLoading(false);
-      } else if (data?.user) {
-        console.log('Login successful, user:', data.user.id);
-        console.log('Session:', data.session);
-        // Force navigation after small delay to ensure context updates
-        setTimeout(() => {
-          console.log('Navigating to dashboard...');
-          navigate('/dashboard');
-        }, 500);
-        setLoading(false);
       } else {
-        console.warn('Login completed but no user data received');
-        setError('Erro inesperado - sem dados do usuário.');
+        console.log('Login bem-sucedido');
         setLoading(false);
+        navigate('/dashboard', { replace: true }); // replace evita voltar para login
       }
     } catch (err) {
       console.error('Unexpected login error:', err);

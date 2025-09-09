@@ -12,7 +12,10 @@ const ProtectedRoute: React.FC = () => {
     console.log('ProtectedRoute: Still loading, showing spinner');
     return (
       <div className="flex h-screen w-full items-center justify-center bg-gray-50 dark:bg-slate-900">
-        <Loader className="w-12 h-12 animate-spin text-blue-500" />
+        <div className="text-center">
+          <Loader className="w-12 h-12 animate-spin text-blue-500 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-300">Entrando...</p>
+        </div>
       </div>
     );
   }
