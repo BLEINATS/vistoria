@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { Property, InspectionSummary } from '../types';
 
-const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL;
-const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
+// Temporarily swapping the variables as they seem to be reversed
+const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
+const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_URL;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Supabase URL and Anon Key must be defined in .env file');
