@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { ArrowLeft, Check, CreditCard, FileText, Zap, Crown, Sparkles } from 'lucide-react';
 import PaymentModal from '../components/Subscription/PaymentModal';
+import PaymentSuccessModal from '../components/Subscription/PaymentSuccessModal';
 
 const Subscription: React.FC = () => {
   const navigate = useNavigate();
@@ -16,6 +17,8 @@ const Subscription: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [planToUpgrade, setPlanToUpgrade] = useState<any>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successData, setSuccessData] = useState<{subscriptionId: string, paymentMethod: 'PIX' | 'BOLETO' | 'CREDIT_CARD', planName: string} | null>(null);
 
   const handleUpgrade = async (planId: string) => {
     if (!user) return;
@@ -50,11 +53,16 @@ const Subscription: React.FC = () => {
     const result = await createSubscription(planToUpgrade, paymentMethod);
     
     if (result.success) {
-      addToast(result.message, 'success');
       setShowPaymentModal(false);
       setPlanToUpgrade(null);
-      // Optionally redirect to a success page or refresh
-      setTimeout(() => window.location.reload(), 2000);
+      
+      // Show success modal with payment details
+      setSuccessData({
+        subscriptionId: result.subscriptionId || '',
+        paymentMethod,
+        planName: planToUpgrade.name
+      });
+      setShowSuccessModal(true);
     } else {
       addToast(result.message, 'error');
     }
@@ -345,6 +353,22 @@ const Subscription: React.FC = () => {
         onConfirm={handlePaymentConfirm}
         loading={upgradeLoading}
       />
+
+      {/* Payment Success Modal */}
+      {successData && (
+        <PaymentSuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => {
+            setShowSuccessModal(false);
+            setSuccessData(null);
+            // Optionally refresh after closing success modal
+            setTimeout(() => window.location.reload(), 1000);
+          }}
+          subscriptionId={successData.subscriptionId}
+          paymentMethod={successData.paymentMethod}
+          planName={successData.planName}
+        />
+      )}
     </div>
   );
 };

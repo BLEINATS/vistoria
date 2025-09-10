@@ -1,9 +1,9 @@
 import { AsaasClient } from 'asaas';
 import type { AsaasCustomer, AsaasSubscription } from '../types/subscription';
 
-// Initialize Asaas client
-const asaasApiKey = process.env.VITE_ASAAS_API_KEY || '';
-const isProduction = process.env.NODE_ENV === 'production';
+// Initialize Asaas client - use environment variable access compatible with Vite
+const asaasApiKey = (import.meta as any).env?.VITE_ASAAS_API_KEY || '';
+const isProduction = (import.meta as any).env?.NODE_ENV === 'production';
 
 export const asaas = new AsaasClient(asaasApiKey, {
   sandbox: !isProduction
