@@ -52,6 +52,7 @@ A React/TypeScript application for property inspections with Supabase backend in
   - **Fixed dashboard missing items count**: Corrected logic to count items from latest EXIT inspection only (not entry) to match comparative report numbers
   - **Fixed field naming**: Corrected Dashboard to use 'inspection_type' instead of 'type' field to match database schema
   - **Synchronized counting logic**: Updated Dashboard to use identical logic as comparative report for counting missing items, ensuring exact number matching between dashboard and reports
+  - **Fixed mobile scrolling issue**: Corrected GlowCard animation component to allow normal page scrolling on mobile devices while preserving desktop hover effects
 
 ## Previous Changes (2025-09-09)
 - Configured Vite server for Replit environment (host: 0.0.0.0, port: 5000)
