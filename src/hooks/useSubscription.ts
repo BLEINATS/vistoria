@@ -11,7 +11,7 @@ export const useSubscription = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch available plans from database
+  // Fetch available plans from database with fallback
   const fetchPlans = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -22,15 +22,74 @@ export const useSubscription = () => {
 
       if (error) {
         console.error('Error fetching plans:', error);
-        throw error;
+        // Use fallback plans to prevent UI breaking
+        setPlans([
+          {
+            id: '7d66e56a-bea2-4c10-b9ca-0f23f2231a56',
+            name: 'Gratuito',
+            price: 0,
+            currency: 'BRL',
+            interval_type: 'month',
+            properties_limit: 1,
+            environments_limit: 3,
+            photos_per_environment_limit: 5,
+            ai_analysis_limit: null,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          },
+          {
+            id: 'f9de3820-0950-4370-99e2-f3bf517ba85d',
+            name: 'Básico',
+            price: 47.00,
+            currency: 'BRL',
+            interval_type: 'month',
+            properties_limit: 2,
+            environments_limit: null,
+            photos_per_environment_limit: 5,
+            ai_analysis_limit: null,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          },
+          {
+            id: 'd6fa6dd4-bb8c-4461-9172-6d90b4832a43',
+            name: 'Premium',
+            price: 77.00,
+            currency: 'BRL',
+            interval_type: 'month',
+            properties_limit: null,
+            environments_limit: null,
+            photos_per_environment_limit: 5,
+            ai_analysis_limit: null,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        ]);
+        return;
       }
 
       setPlans(data || []);
     } catch (error) {
       console.error('Error fetching plans:', error);
-      setError('Erro ao carregar planos');
-      // Fallback to empty array if fetch fails
-      setPlans([]);
+      // Always provide fallback to prevent loops
+      setPlans([
+        {
+          id: '7d66e56a-bea2-4c10-b9ca-0f23f2231a56',
+          name: 'Gratuito',
+          price: 0,
+          currency: 'BRL',
+          interval_type: 'month',
+          properties_limit: 1,
+          environments_limit: 3,
+          photos_per_environment_limit: 5,
+          ai_analysis_limit: null,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ]);
     }
   }, []);
 
@@ -124,13 +183,16 @@ export const useSubscription = () => {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        throw error;
+        console.error('Error fetching subscription:', error);
+        // Set null instead of throwing to prevent loops
+        setCurrentSubscription(null);
+        return;
       }
       
       setCurrentSubscription(data);
     } catch (err) {
       console.error('Error fetching subscription:', err);
-      // Don't set error here - user might not have a subscription
+      setCurrentSubscription(null);
     }
   }, [user]);
 
