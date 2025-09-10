@@ -23,7 +23,7 @@ export const useSubscriptionManagement = () => {
       }
 
       // Call secure backend Edge Function
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-subscription`, {
+      const response = await fetch(`https://cmrukbrqkjvqeoxueltt.functions.supabase.co/create-subscription`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

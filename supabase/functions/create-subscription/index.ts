@@ -121,7 +121,7 @@ serve(async (req) => {
       throw new Error('ASAAS_API_KEY not configured')
     }
 
-    const customerResponse = await fetch('https://sandbox.asaas.com/api/v3/customers', {
+    const customerResponse = await fetch('https://api.asaas.com/v3/customers', {
       method: 'POST',
       headers: {
         'access_token': asaasApiKey,
@@ -141,7 +141,7 @@ serve(async (req) => {
     const asaasCustomer: AsaasCustomer = await customerResponse.json()
 
     // Create subscription in Asaas
-    const subscriptionResponse = await fetch('https://sandbox.asaas.com/api/v3/subscriptions', {
+    const subscriptionResponse = await fetch('https://api.asaas.com/v3/subscriptions', {
       method: 'POST',
       headers: {
         'access_token': asaasApiKey,
@@ -184,7 +184,7 @@ serve(async (req) => {
     }
 
     // Get payment details for the first charge
-    const chargeResponse = await fetch(`https://sandbox.asaas.com/api/v3/payments?subscription=${asaasSubscription.id}`, {
+    const chargeResponse = await fetch(`https://api.asaas.com/v3/payments?subscription=${asaasSubscription.id}`, {
       headers: {
         'access_token': asaasApiKey,
       },
@@ -198,7 +198,7 @@ serve(async (req) => {
         
         if (paymentMethod === 'PIX') {
           // Get PIX details
-          const pixResponse = await fetch(`https://sandbox.asaas.com/api/v3/payments/${charge.id}/pixQrCode`, {
+          const pixResponse = await fetch(`https://api.asaas.com/v3/payments/${charge.id}/pixQrCode`, {
             headers: {
               'access_token': asaasApiKey,
             },
