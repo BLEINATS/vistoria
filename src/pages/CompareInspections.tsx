@@ -236,8 +236,9 @@ const CompareInspections: React.FC = () => {
       .filter(p => p.room === room)
       .flatMap(p => (p.analysisResult.objectsDetected || []).map(obj => ({ ...obj, photoUrl: p.url })));
 
-    // Get exit room photo for missing items (items that were in entry but not found in exit)
+    // Get room photos for proper comparison display
     const exitRoomPhoto = exitData.photos.find(p => p.room === room)?.url;
+    const entryRoomPhoto = entryData.photos.find(p => p.room === room)?.url;
 
 
     const pairedItems: { entry: DetectedObject, exit: DetectedObject }[] = [];
@@ -272,7 +273,13 @@ const CompareInspections: React.FC = () => {
       exitPhotoUrl: exitRoomPhoto
     }));
 
-    return { changedItems, unchangedItems, newItems, missingItems: missingItemsWithExitPhoto };
+    // Add entry photo URL to new items for context comparison display
+    const newItemsWithEntryPhoto = newItems.map(item => ({
+      ...item,
+      entryPhotoUrl: entryRoomPhoto
+    }));
+
+    return { changedItems, unchangedItems, newItems: newItemsWithEntryPhoto, missingItems: missingItemsWithExitPhoto };
   };
 
   const totalChanges = allRooms.reduce((acc, room) => {
@@ -506,7 +513,7 @@ const CompareInspections: React.FC = () => {
               {newItems.length > 0 && roomConfig.newItems && (
                 <div className="mb-4">
                   <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2 flex items-center gap-2"><PlusCircle className="w-4 h-4 text-green-500"/>Itens Novos na Saída</h4>
-                  {newItems.map(item => <ComparisonItem key={item.id} item={{ exit: item }} type="new" />)}
+                  {newItems.map(item => <ComparisonItem key={item.id} item={{ exit: item, entryPhotoUrl: item.entryPhotoUrl }} type="new" />)}
                 </div>
               )}
 

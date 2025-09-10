@@ -12,6 +12,7 @@ interface ComparisonItemProps {
     entry?: DetectedObject;
     exit?: DetectedObject;
     exitPhotoUrl?: string;
+    entryPhotoUrl?: string;
   };
   type: ComparisonType;
 }
@@ -145,9 +146,12 @@ const ComparisonItem: React.FC<ComparisonItemProps> = ({ item, type }) => {
             />
           </>
         ) : type === 'new' ? (
-          // For new items, show empty entry and exit photo with green marker
+          // For new items, show entry photo for context and exit photo with green marker
           <>
-            <PhotoThumbnail label="Entrada" imageUrl={undefined} />
+            <PhotoWithMarkers 
+              label="Entrada" 
+              imageUrl={item.entryPhotoUrl} 
+            />
             <PhotoWithMarkers 
               label="Saída" 
               imageUrl={item.exit?.photoUrl} 
