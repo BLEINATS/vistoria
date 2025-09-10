@@ -15,7 +15,6 @@ import {
   Phone,
   Building,
   Camera,
-  Upload,
   X
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -324,6 +323,49 @@ const Profile: React.FC = () => {
         {!isPasswordSection ? (
           /* Profile Information Form */
           <form onSubmit={handleProfileUpdate} className="p-6 space-y-6">
+            {/* Avatar Upload Section */}
+            <div className="flex flex-col items-center space-y-4 mb-8">
+              <div className="relative">
+                {avatarPreview ? (
+                  <img
+                    src={avatarPreview}
+                    alt="Avatar"
+                    className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-slate-700 shadow-lg"
+                  />
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-slate-700 flex items-center justify-center border-4 border-white dark:border-slate-700 shadow-lg">
+                    <User className="w-12 h-12 text-gray-400" />
+                  </div>
+                )}
+                
+                {avatarPreview && (
+                  <button
+                    type="button"
+                    onClick={removeAvatar}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              
+              <div className="flex flex-col items-center space-y-2">
+                <label className="cursor-pointer inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
+                  <Camera className="w-4 h-4 mr-2" />
+                  Alterar Foto
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                  />
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  JPG, PNG ou GIF. Máximo 5MB.
+                </p>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -358,12 +400,37 @@ const Profile: React.FC = () => {
                   O email não pode ser alterado
                 </p>
               </div>
-            </div>
 
-            <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-lg p-4">
-              <div className="text-sm text-blue-700 dark:text-blue-400">
-                <p className="font-medium">💡 Campos adicionais</p>
-                <p className="mt-1">Telefone e empresa podem ser adicionados em futuras atualizações do sistema.</p>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Telefone
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="tel"
+                    value={profileData.phone}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="(11) 99999-9999"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Empresa
+                </label>
+                <div className="relative">
+                  <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={profileData.company}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, company: e.target.value }))}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Nome da empresa"
+                  />
+                </div>
               </div>
             </div>
 
