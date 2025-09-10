@@ -82,7 +82,7 @@ const Profile: React.FC = () => {
     };
     
     try {
-      // Use only basic fields that definitely exist to avoid cache issues
+      // Carregar todos os campos do perfil após restart do workflow
       const { data: basicData } = await supabase
         .from('profiles')
         .select('full_name, phone, company, avatar_url')
