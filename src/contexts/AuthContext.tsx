@@ -60,6 +60,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (currentUser) {
           console.log('✅ AuthContext: Usuário encontrado, buscando perfil...');
           await fetchProfile(currentUser.id);
+          console.log('📝 AuthContext: Perfil carregado, finalizando loading');
         } else {
           console.log('❌ AuthContext: Nenhum usuário encontrado');
           setProfile(null);
@@ -87,12 +88,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         if (currentUser) {
           console.log('✅ AuthContext: Usuário autenticado, buscando perfil...');
-          await fetchProfile(currentUser.id);
+          try {
+            await fetchProfile(currentUser.id);
+            console.log('📝 AuthContext: Perfil carregado com sucesso');
+          } catch (error) {
+            console.warn('⚠️ AuthContext: Erro ao buscar perfil, continuando sem perfil:', error);
+            setProfile(null);
+          }
         } else {
           console.log('❌ AuthContext: Usuário deslogado');
           setProfile(null);
         }
-        console.log('🏁 AuthContext: Estado atualizado, loading = false');
+        console.log('🏁 AuthContext: Estado atualizado, setLoading(false)');
         setLoading(false);
       }
     );

@@ -18,11 +18,17 @@ const Login: React.FC = () => {
 
   // Redirect to dashboard if user is already authenticated
   useEffect(() => {
+    console.log('🔍 Login useEffect:', { 
+      hasUser: !!user, 
+      authLoading, 
+      loginLoading: loading 
+    });
+    
     if (user && !authLoading) {
-      console.log('🚀 User already authenticated, redirecting to dashboard...');
+      console.log('🚀 User authenticated, redirecting to dashboard now!');
       navigate('/dashboard', { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, loading]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
