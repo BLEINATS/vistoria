@@ -289,7 +289,7 @@ const Dashboard: React.FC = () => {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Itens Faltando na Saída</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Itens Faltando da Última Vistoria</p>
               <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats?.criticalIssues || 0}</p>
             </div>
             <div className="p-3 bg-red-100 dark:bg-red-500/20 rounded-full">
