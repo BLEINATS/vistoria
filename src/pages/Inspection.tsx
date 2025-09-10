@@ -467,38 +467,48 @@ const Inspection: React.FC = () => {
   };
 
   const handleBackNavigation = useCallback(async () => {
-    console.log('handleBackNavigation called:', {
+    console.log('🔙 handleBackNavigation called:', {
       inspectionId,
       photosLength: photos.length,
       inspectionType,
       hasObservations: generalObservations?.length > 0
     });
     
-    if (inspectionId) {
-      // Save observations and any pending data before leaving
-      console.log('Saving observations before navigation...');
-      await handleSaveObservations();
-      
-      // Update inspection status to indicate it was saved (but not necessarily completed)
-      if (photos.length > 0) {
-        console.log('Updating inspection status to in-progress...');
-        const { error } = await supabase
-          .from('inspections')
-          .update({ status: 'in-progress' })
-          .eq('id', inspectionId);
-          
-        if (error) {
-          console.error('Error updating inspection status:', error);
+    try {
+      if (inspectionId) {
+        // Save observations and any pending data before leaving
+        console.log('💾 Saving observations before navigation...');
+        await handleSaveObservations();
+        
+        // Update inspection status to indicate it was saved (but not necessarily completed)
+        if (photos.length > 0) {
+          console.log('📝 Updating inspection status to in-progress...');
+          const { error } = await supabase
+            .from('inspections')
+            .update({ status: 'in-progress' })
+            .eq('id', inspectionId);
+            
+          if (error) {
+            console.error('❌ Error updating inspection status:', error);
+            addToast('Erro ao salvar vistoria', 'error');
+          } else {
+            console.log('✅ Inspection status updated successfully');
+            addToast('Vistoria salva automaticamente', 'success');
+          }
         } else {
-          console.log('Inspection status updated successfully');
+          console.log('⚠️ No photos to save, skipping status update');
         }
+      } else {
+        console.warn('⚠️ No inspectionId found, skipping save');
       }
-    } else {
-      console.warn('No inspectionId found, skipping save');
+    } catch (error) {
+      console.error('💥 Error in handleBackNavigation:', error);
+      addToast('Erro ao salvar. Tente novamente.', 'error');
     }
     
+    console.log('🚀 Navigating to property page...');
     navigate(`/property/${property.id}`);
-  }, [inspectionId, photos.length, property.id, navigate, inspectionType, generalObservations]);
+  }, [inspectionId, photos.length, property.id, navigate, inspectionType, generalObservations, addToast]);
 
   const generateReport = async () => {
     if (photos.length === 0) {
@@ -569,6 +579,7 @@ const Inspection: React.FC = () => {
           <button
             onClick={handleBackNavigation}
             className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700"
+            title="Voltar (salvando automaticamente)"
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
