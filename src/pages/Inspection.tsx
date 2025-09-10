@@ -66,6 +66,29 @@ const getRealAIAnalysis = async (
 
   const imageSeed = generateImageSeed(imageUrl);
   
+  // Generate room-specific object detection instructions
+  const getRoomSpecificInstructions = (room: string): string => {
+    const roomLower = room.toLowerCase();
+    
+    if (roomLower.includes('sala') || roomLower.includes('estar')) {
+      return 'OBJETOS PRIORITÁRIOS PARA SALA: sofá, poltrona, mesa de centro, mesa lateral, televisão, estante, rack para TV, tapete, almofadas, cortinas, luminária, abajur, quadros, plantas, ar-condicionado, ventilador de teto, mesa de jantar, cadeiras de jantar, buffet, cristaleira.';
+    } else if (roomLower.includes('cozinha')) {
+      return 'OBJETOS PRIORITÁRIOS PARA COZINHA: geladeira, fogão, forno, micro-ondas, coifa, exaustor, pia, torneira, armários superiores, armários inferiores, bancada, mesa, cadeiras, banquetas, liquidificador, batedeira, cafeteira, torradeira, panelas, utensílios pendurados.';
+    } else if (roomLower.includes('banheiro') || roomLower.includes('lavabo')) {
+      return 'OBJETOS PRIORITÁRIOS PARA BANHEIRO: vaso sanitário, pia, torneira, chuveiro, ducha, box, espelho, armário, gabinete, toalhas, tapete, porta-toalhas, saboneteira, suporte papel higiênico, lixeira, produtos de higiene visíveis.';
+    } else if (roomLower.includes('quarto') || roomLower.includes('dormitório')) {
+      return 'OBJETOS PRIORITÁRIOS PARA QUARTO: cama, colchão, travesseiros, lençóis, guarda-roupa, cômoda, criado-mudo, penteadeira, cadeira, poltrona, espelho, luminária, abajur, cortinas, tapete, televisão, ar-condicionado, ventilador.';
+    } else if (roomLower.includes('área') || roomLower.includes('serviço') || roomLower.includes('lavanderia')) {
+      return 'OBJETOS PRIORITÁRIOS PARA ÁREA DE SERVIÇO: máquina de lavar, secadora, tanque, torneira, armários, prateleiras, varal, tábua de passar, ferro de passar, produtos de limpeza, vassouras, rodos, baldes.';
+    } else if (roomLower.includes('garagem')) {
+      return 'OBJETOS PRIORITÁRIOS PARA GARAGEM: portão, motor do portão, estantes, armários, ferramentas, equipamentos, bicicletas, objetos pendurados, workbench, compressor, aspirador.';
+    } else {
+      return 'OBJETOS PRIORITÁRIOS GERAIS: identifique TODOS os móveis, eletrodomésticos, utensílios, decorações e instalações visíveis no ambiente.';
+    }
+  };
+
+  const roomInstructions = getRoomSpecificInstructions(roomName);
+
   const { data, error } = await supabase.functions.invoke('analyze-image', {
     body: { 
       imageUrl, 
@@ -76,8 +99,8 @@ const getRealAIAnalysis = async (
       isDuplicateImage,
       consistencyMode: entryObjects ? 'comparison' : 'initial',
       analysisInstructions: entryObjects 
-        ? `Analyze this EXIT image and compare carefully with the provided ENTRY objects. ${isDuplicateImage ? 'CRITICAL: This appears to be the same or very similar image as the entry. Be EXTREMELY conservative - only report differences if you are 100% certain they exist. When in doubt, keep the same condition.' : 'Be VERY conservative - only report differences if you are absolutely certain objects have genuinely changed condition, been added, or removed. If objects appear identical, maintain the same condition assessment.'}`
-        : 'Analyze this ENTRY image thoroughly and consistently. Focus on accurate object detection and condition assessment that can be reliably reproduced.'
+        ? `DETECÇÃO PRIORITÁRIA DE OBJETOS: Analise esta imagem de SAÍDA e compare com os objetos da ENTRADA fornecidos. ${isDuplicateImage ? 'CRÍTICO: Esta parece ser a mesma imagem da entrada. Seja EXTREMAMENTE conservador - só reporte diferenças se tiver 100% de certeza.' : 'Seja MUITO assertivo na detecção de objetos. Foque em: 1) OBJETOS PRINCIPAIS vs entrada 2) O QUE MUDOU vs entrada 3) O QUE ESTÁ FALTANDO vs entrada. Priorize objetos tangíveis sobre acabamentos.'} ${roomInstructions}`
+        : `DETECÇÃO COMPLETA DE OBJETOS: Analise esta imagem de ENTRADA sendo EXTREMAMENTE DETALHISTA na identificação de TODOS os objetos visíveis. SEJA ASSERTIVO E PRECISO. ${roomInstructions} IMPORTANTE: Detecte CADA objeto visível com material e cor específicos. Foque em OBJETOS INVENTARIÁVEIS que podem ser contados, medidos e avaliados. Priorize móveis, eletrodomésticos, utensílios e acessórios sobre acabamentos construtivos.`
     },
   });
 
