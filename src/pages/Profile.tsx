@@ -73,30 +73,52 @@ const Profile: React.FC = () => {
   const fetchProfileData = async () => {
     if (!user) return;
     
+    // Always set email from user auth data first
+    const baseProfileInfo = {
+      fullName: '',
+      email: user.email || '',
+      phone: '',
+      company: '',
+      avatarUrl: ''
+    };
+    
     try {
+      // Try to fetch basic profile info first
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, phone, company, avatar_url')
+        .select('full_name, avatar_url')
         .eq('id', user.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        console.error('Error fetching profile:', error);
-        return;
+      if (data) {
+        baseProfileInfo.fullName = data.full_name || '';
+        baseProfileInfo.avatarUrl = data.avatar_url || '';
       }
 
-      const profileInfo = {
-        fullName: data?.full_name || '',
-        email: user.email || '',
-        phone: data?.phone || '',
-        company: data?.company || '',
-        avatarUrl: data?.avatar_url || ''
-      };
+      // Try to fetch extended fields if they exist
+      try {
+        const { data: extendedData } = await supabase
+          .from('profiles')
+          .select('phone, company')
+          .eq('id', user.id)
+          .single();
+        
+        if (extendedData) {
+          baseProfileInfo.phone = extendedData.phone || '';
+          baseProfileInfo.company = extendedData.company || '';
+        }
+      } catch (extendedError) {
+        // Extended fields don't exist yet, that's ok
+        console.log('Extended profile fields not available yet');
+      }
 
-      setProfileData(profileInfo);
-      setAvatarPreview(profileInfo.avatarUrl);
+      setProfileData(baseProfileInfo);
+      setAvatarPreview(baseProfileInfo.avatarUrl);
+
     } catch (error) {
       console.error('Error fetching profile data:', error);
+      // Even if profile fetch fails, show user email
+      setProfileData(baseProfileInfo);
     }
   };
 
