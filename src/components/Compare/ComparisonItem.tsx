@@ -11,6 +11,7 @@ interface ComparisonItemProps {
   item: {
     entry?: DetectedObject;
     exit?: DetectedObject;
+    exitPhotoUrl?: string;
   };
   type: ComparisonType;
 }
@@ -138,7 +139,7 @@ const ComparisonItem: React.FC<ComparisonItemProps> = ({ item, type }) => {
             />
             <PhotoWithMarkers 
               label="Saída" 
-              imageUrl={item.entry?.photoUrl} // Use same photo to show where object should be
+              imageUrl={item.exitPhotoUrl} // Use exit photo to show where object is missing
               missingObject={item.entry}
               showMissingMarker={true}
             />
