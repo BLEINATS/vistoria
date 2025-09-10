@@ -8,6 +8,12 @@ interface PaymentSuccessModalProps {
   subscriptionId: string;
   paymentMethod: 'PIX' | 'BOLETO' | 'CREDIT_CARD';
   planName: string;
+  // Real payment data from backend
+  pixCode?: string;
+  qrCodeUrl?: string;
+  boletoUrl?: string;
+  invoiceUrl?: string;
+  dueDate?: string;
 }
 
 const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
@@ -15,7 +21,12 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
   onClose,
   subscriptionId,
   paymentMethod,
-  planName
+  planName,
+  pixCode,
+  qrCodeUrl,
+  boletoUrl,
+  invoiceUrl,
+  dueDate
 }) => {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -98,15 +109,24 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
                   {payment.message}
                 </p>
                 
-                {paymentMethod === 'PIX' && (
+                {paymentMethod === 'PIX' && pixCode && (
                   <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4 mb-4">
+                    {qrCodeUrl && (
+                      <div className="text-center mb-4">
+                        <img 
+                          src={`data:image/png;base64,${qrCodeUrl}`} 
+                          alt="QR Code PIX" 
+                          className="mx-auto w-32 h-32"
+                        />
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-sm bg-gray-100 dark:bg-slate-600 px-2 py-1 rounded">
-                        {subscriptionId}
+                      <span className="font-mono text-xs bg-gray-100 dark:bg-slate-600 px-2 py-1 rounded break-all">
+                        {pixCode}
                       </span>
                       <button
-                        onClick={() => copyToClipboard(subscriptionId)}
-                        className="p-2 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
+                        onClick={() => copyToClipboard(pixCode)}
+                        className="p-2 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-lg transition-colors flex-shrink-0 ml-2"
                       >
                         <Copy className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                       </button>
@@ -114,12 +134,32 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
                   </div>
                 )}
 
-                {paymentMethod === 'BOLETO' && (
+                {paymentMethod === 'BOLETO' && boletoUrl && (
                   <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4 mb-4">
                     <CreditCard className="w-12 h-12 text-blue-500 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Vencimento: {new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                      Vencimento: {dueDate ? new Date(dueDate).toLocaleDateString('pt-BR') : 'A definir'}
                     </p>
+                    <div className="space-y-2">
+                      <a
+                        href={boletoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block w-full text-center bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 py-2 px-4 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/30 transition-colors text-sm"
+                      >
+                        Ver Boleto
+                      </a>
+                      {invoiceUrl && (
+                        <a
+                          href={invoiceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block w-full text-center bg-gray-100 dark:bg-slate-600 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-500 transition-colors text-sm"
+                        >
+                          Ver Fatura
+                        </a>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -136,11 +176,10 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
               <div className="space-y-3">
                 <button
                   onClick={() => {
-                    if (paymentMethod === 'PIX') {
-                      copyToClipboard(subscriptionId);
-                    } else if (paymentMethod === 'BOLETO') {
-                      // In a real app, this would open the boleto PDF
-                      window.open('#', '_blank');
+                    if (paymentMethod === 'PIX' && pixCode) {
+                      copyToClipboard(pixCode);
+                    } else if (paymentMethod === 'BOLETO' && boletoUrl) {
+                      window.open(boletoUrl, '_blank');
                     }
                   }}
                   className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"

@@ -18,7 +18,16 @@ const Subscription: React.FC = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [planToUpgrade, setPlanToUpgrade] = useState<any>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [successData, setSuccessData] = useState<{subscriptionId: string, paymentMethod: 'PIX' | 'BOLETO' | 'CREDIT_CARD', planName: string} | null>(null);
+  const [successData, setSuccessData] = useState<{
+    subscriptionId: string, 
+    paymentMethod: 'PIX' | 'BOLETO' | 'CREDIT_CARD', 
+    planName: string,
+    pixCode?: string,
+    qrCodeUrl?: string,
+    boletoUrl?: string,
+    invoiceUrl?: string,
+    dueDate?: string
+  } | null>(null);
 
   const handleUpgrade = async (planId: string) => {
     if (!user) return;
@@ -60,7 +69,13 @@ const Subscription: React.FC = () => {
       setSuccessData({
         subscriptionId: result.subscriptionId || '',
         paymentMethod,
-        planName: planToUpgrade.name
+        planName: planToUpgrade.name,
+        // Real payment data from backend
+        pixCode: result.pixCode,
+        qrCodeUrl: result.qrCodeUrl,
+        boletoUrl: result.boletoUrl,
+        invoiceUrl: result.invoiceUrl,
+        dueDate: result.dueDate,
       });
       setShowSuccessModal(true);
     } else {
@@ -367,6 +382,11 @@ const Subscription: React.FC = () => {
           subscriptionId={successData.subscriptionId}
           paymentMethod={successData.paymentMethod}
           planName={successData.planName}
+          pixCode={successData.pixCode}
+          qrCodeUrl={successData.qrCodeUrl}
+          boletoUrl={successData.boletoUrl}
+          invoiceUrl={successData.invoiceUrl}
+          dueDate={successData.dueDate}
         />
       )}
     </div>

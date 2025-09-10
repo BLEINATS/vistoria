@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { createAsaasCustomer, createAsaasSubscription } from '../lib/asaas';
 import type { SubscriptionPlan } from '../types/subscription';
 
-// Real subscription management with Asaas integration
+// Secure subscription management using backend Edge Functions
 export const useSubscriptionManagement = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -17,64 +16,43 @@ export const useSubscriptionManagement = () => {
     
     setLoading(true);
     try {
-      // Get user profile for additional data
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single();
-
-      const userName = profile?.full_name || user.email.split('@')[0];
-
-      console.log('Creating Asaas customer for:', userName, user.email);
-
-      // 1. Create customer in Asaas
-      const asaasCustomer = await createAsaasCustomer({
-        name: userName,
-        email: user.email,
-      });
-
-      console.log('Asaas customer created:', asaasCustomer.id);
-
-      // 2. Create subscription in Asaas
-      const asaasSubscription = await createAsaasSubscription({
-        customer: asaasCustomer.id,
-        billingType: paymentMethod,
-        cycle: 'MONTHLY',
-        value: plan.price,
-        description: `VistorIA - Plano ${plan.name}`,
-      });
-
-      console.log('Asaas subscription created:', asaasSubscription.id);
-
-      // 3. Store subscription in our database
-      const { error: dbError } = await supabase
-        .from('subscriptions')
-        .upsert({
-          user_id: user.id,
-          plan_name: plan.name,
-          price: plan.price,
-          asaas_subscription_id: asaasSubscription.id,
-          asaas_customer_id: asaasCustomer.id,
-          status: 'PENDING',
-          billing_type: paymentMethod,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-
-      if (dbError) {
-        console.error('Database error:', dbError);
-        return {
-          success: false,
-          message: 'Erro ao salvar assinatura no banco de dados'
-        };
+      // Get user's session token for authenticated request
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Usuário não autenticado');
       }
+
+      // Call secure backend Edge Function
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-subscription`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          planId: plan.id,
+          paymentMethod,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao processar pagamento');
+      }
+
+      const result = await response.json();
 
       return {
         success: true,
-        message: `Assinatura ${plan.name} criada com sucesso! Finalize o pagamento para ativar seu plano.`,
-        subscriptionId: asaasSubscription.id,
-        paymentMethod
+        message: result.message,
+        subscriptionId: result.subscriptionId,
+        paymentMethod: result.paymentMethod,
+        // Payment details for different methods
+        pixCode: result.pixCode,
+        qrCodeUrl: result.qrCodeUrl,
+        boletoUrl: result.boletoUrl,
+        invoiceUrl: result.invoiceUrl,
+        dueDate: result.dueDate,
       };
 
     } catch (error) {
