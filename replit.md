@@ -48,7 +48,7 @@ A React/TypeScript application for property inspections with Supabase backend in
   - **Removed visual markers**: Removed red object detection markers from photos in all components (AnalysisResult, Reports, ComparisonItem) for cleaner interface
   - **Fixed comparative report image display**: Fixed bug where missing items showed entry photo for both entry and exit - now correctly shows entry photo and actual exit photo for proper comparison
   - **Fixed new items photo display**: Enhanced "Itens Novos na Saída" to show entry photo for context instead of "Sem foto" - now shows before/after comparison
-  - **Reactivated visual markers for comparative reports**: Added red pins on exit photos to show where AI detected changes or missing items, improving accuracy of visual feedback
+  - **Removed visual markers from comparative reports**: Removed red pins due to positioning issues - interface now focuses on clear text-based comparison without visual markers
 
 ## Previous Changes (2025-09-09)
 - Configured Vite server for Replit environment (host: 0.0.0.0, port: 5000)

@@ -58,37 +58,7 @@ const PhotoWithMarkers: React.FC<PhotoWithMarkersProps> = ({
         >
           <img src={imageUrl} alt={label} className="w-full h-full object-contain" />
           
-          {/* Marcadores visuais para sinalizar mudanças no relatório comparativo */}
-          {(detectedObject?.markerCoordinates || (missingObject?.markerCoordinates && showMissingMarker)) && (() => {
-            const coords = detectedObject?.markerCoordinates || missingObject?.markerCoordinates;
-            // Garantir que as coordenadas fiquem dentro da imagem (com margem de segurança)
-            const safeX = Math.min(Math.max(coords!.x, 10), 90);
-            const safeY = Math.min(Math.max(coords!.y, 15), 85);
-            
-            return (
-              <div 
-                className="absolute pointer-events-none z-10"
-                style={{ 
-                  left: `${safeX}%`, 
-                  top: `${safeY}%`, 
-                  transform: 'translate(-50%, -50%)' 
-                }}
-                title={(detectedObject || missingObject)?.item}
-              >
-                {showMissingMarker ? (
-                  // Red marker with X for missing items  
-                  <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
-                    <span className="text-white text-xs font-bold">✕</span>
-                  </div>
-                ) : (
-                  // Red marker for detected changes
-                  <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
-                    <span className="text-white text-xs font-bold">!</span>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
+          {/* Marcadores visuais removidos conforme solicitado */}
           
           
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
