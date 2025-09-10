@@ -135,14 +135,12 @@ const Profile: React.FC = () => {
         }
       }
 
-      // Update only basic profile fields to avoid cache issues
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user!.id,
-          full_name: profileData.fullName,
-          avatar_url: avatarUrl
-        });
+      // Use RPC function to bypass RLS issues completely
+      const { error: profileError } = await supabase.rpc('upsert_user_profile', {
+        user_id: user!.id,
+        user_full_name: profileData.fullName,
+        user_avatar_url: avatarUrl
+      });
 
       if (profileError) throw profileError;
 

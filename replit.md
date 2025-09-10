@@ -37,7 +37,7 @@ A React/TypeScript application for property inspections with Supabase backend in
   - Enhanced profile form with new fields and photo management
   - **Fixed cache schema issues**: Resolved Supabase cache problems that prevented loading extended fields
   - Implemented robust data loading that always shows user email and name when available
-  - **Fixed RLS policy issues**: Resolved Row Level Security errors that prevented profile updates
+  - **Fixed RLS policy issues**: Resolved Row Level Security errors using RPC functions to bypass authentication restrictions
 
 ## Previous Changes (2025-09-09)
 - Configured Vite server for Replit environment (host: 0.0.0.0, port: 5000)
