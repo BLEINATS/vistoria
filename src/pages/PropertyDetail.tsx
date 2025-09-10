@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { supabase, mapToProperty } from '../lib/supabase';
 import { Property, InspectionSummary } from '../types';
 import { Loader, ArrowLeft, MapPin, Building, Calendar, FileText, Camera, CheckCircle, Clock, AlertCircle, GitCompareArrows, Pencil, RefreshCw } from 'lucide-react';
@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 const PropertyDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
@@ -23,9 +24,14 @@ const PropertyDetail: React.FC = () => {
     if (showLoading) setLoading(true);
     
     try {
-      // Force a fresh query by adding a timestamp parameter to bypass any caching
+      console.log('🔄 Fetching fresh property data for ID:', id);
+      
+      // Force a fresh query by adding a timestamp to bypass any caching
+      // Use the same approach as Properties.tsx which ALWAYS works
+      const timestamp = Date.now();
       const { data, error } = await supabase.rpc('get_property_details_by_id', { 
-        p_id: id 
+        p_id: id,
+        _cache_bust: timestamp // Force fresh data
       });
       
       if (error) throw error;
@@ -35,14 +41,20 @@ const PropertyDetail: React.FC = () => {
       if (!mapped) throw new Error("Falha ao mapear dados do imóvel");
 
       setProperty(mapped);
-      console.log('Property data refreshed:', mapped.inspections?.length || 0, 'inspections found');
+      console.log('✅ Property data refreshed:', mapped.inspections?.length || 0, 'inspections found');
+      
+      // Log inspection statuses for debugging
+      mapped.inspections?.forEach(insp => {
+        console.log(`📋 Inspection ${insp.inspection_type}: ${insp.status} (${insp.photoCount} photos)`);
+      });
+      
     } catch (error) {
       console.error("Failed to fetch property:", error);
       setProperty(null);
     } finally {
       if (showLoading) setLoading(false);
     }
-  }, [id, profile?.full_name]); // Only depend on id and full_name, not the entire profile object
+  }, [id, profile?.full_name]);
 
   useEffect(() => {
     console.log('🏠 PropertyDetail mounted, fetching property data...');
@@ -59,6 +71,18 @@ const PropertyDetail: React.FC = () => {
     // Listen for route changes 
     refreshOnNavigation();
   }, [id, fetchProperty]); // Trigger when property ID changes
+
+  // React to forceRefresh state from navigation
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.forceRefresh) {
+      console.log('🔄 Force refresh requested from navigation state');
+      setTimeout(() => fetchProperty(false), 50);
+      
+      // Clear the state to prevent infinite refreshes
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [location.state, fetchProperty]);
 
   // Add window focus listener to refresh data when user returns to the page
   useEffect(() => {

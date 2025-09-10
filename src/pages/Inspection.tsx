@@ -507,7 +507,13 @@ const Inspection: React.FC = () => {
     }
     
     console.log('🚀 Navigating to property page...');
-    navigate(`/property/${property.id}`);
+    
+    // Force a complete reload of the property page to ensure fresh data
+    // This mimics what happens when clicking "Meus Imóveis"
+    navigate(`/property/${property.id}`, { 
+      replace: true,
+      state: { forceRefresh: true, timestamp: Date.now() }
+    });
   }, [inspectionId, photos.length, property.id, navigate, inspectionType, generalObservations, addToast]);
 
   const generateReport = async () => {
