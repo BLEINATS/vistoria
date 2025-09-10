@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Home, Loader } from 'lucide-react';
+import { Plus, Search, Home, Loader, CreditCard } from 'lucide-react';
 import { motion } from 'framer-motion';
 import PropertyCard from '../components/Properties/PropertyCard';
 import PropertyForm, { PropertyFormData } from '../components/Properties/PropertyForm';
@@ -22,7 +22,7 @@ const Properties: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { updateUsage } = useSubscription();
+  const { updateUsage, userLimits } = useSubscription();
 
   const fetchProperties = useCallback(async () => {
     if (!user) return;
@@ -242,12 +242,29 @@ const Properties: React.FC = () => {
       </div>
 
       {/* Usage Indicators */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
           <UsageIndicator type="properties" />
         </div>
         <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
           <UsageIndicator type="environments" />
+        </div>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+          <div className="flex items-center gap-2">
+            <div className="text-blue-600 dark:text-blue-400">
+              <CreditCard className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-700 dark:text-gray-300 font-medium">
+                  Plano Atual
+                </span>
+                <span className="font-semibold text-blue-600 dark:text-blue-400">
+                  {userLimits?.plan_name || 'Carregando...'}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

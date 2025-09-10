@@ -5,7 +5,7 @@ import type { SubscriptionPlan, UserPlanLimits, Subscription } from '../types/su
 
 export const useSubscription = () => {
   const { user } = useAuth();
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([
+  const [plans] = useState<SubscriptionPlan[]>([
     {
       id: '1',
       name: 'Gratuito',
@@ -60,7 +60,7 @@ export const useSubscription = () => {
     await new Promise(resolve => setTimeout(resolve, 100)); // Simulate loading
   }, []);
 
-  // Fetch user's current limits and usage (using localStorage for demo)
+  // Fetch user's current limits and usage (real data from database)
   const fetchUserLimits = useCallback(async () => {
     if (!user) return;
 
@@ -78,17 +78,42 @@ export const useSubscription = () => {
         }
       }
 
-      // Get current usage from localStorage
-      const usageKey = `vistoria_usage_${user.id}`;
-      const usageStored = localStorage.getItem(usageKey);
-      let usage = { properties_used: 0, environments_used: 0, photos_uploaded: 0, ai_analyses_used: 0 };
-      
-      if (usageStored) {
-        try {
-          usage = JSON.parse(usageStored);
-        } catch {
-          // Use defaults
+      // Get real usage from database using RPC function that already works
+      let properties_used = 0;
+      let environments_used = 0;
+      let photos_uploaded = 0;
+
+      try {
+        // Use the existing RPC function to get properties with details
+        const { data: propertiesData } = await supabase.rpc('get_properties_with_details');
+        
+        if (propertiesData && Array.isArray(propertiesData)) {
+          // Count user's properties
+          properties_used = propertiesData.filter(p => p.user_id === user.id).length;
+          
+          // Count environments - each inspection represents an environment/room being inspected
+          environments_used = propertiesData
+            .filter(p => p.user_id === user.id)
+            .reduce((total, property) => {
+              return total + (property.inspections?.length || 0);
+            }, 0);
+          
+          // Count photos from all inspections
+          photos_uploaded = propertiesData
+            .filter(p => p.user_id === user.id)
+            .reduce((total, property) => {
+              const inspectionPhotos = property.inspections?.reduce((photoCount: number, inspection: any) => {
+                return photoCount + (inspection.photos?.length || 0);
+              }, 0) || 0;
+              return total + inspectionPhotos;
+            }, 0);
         }
+      } catch (error) {
+        console.error('Error fetching usage data:', error);
+        // Use fallback values
+        properties_used = 0;
+        environments_used = 0;
+        photos_uploaded = 0;
       }
 
       // Set limits based on plan
@@ -100,7 +125,10 @@ export const useSubscription = () => {
           environments_limit: planLimits.environments_limit,
           photos_per_environment_limit: planLimits.photos_per_environment_limit,
           ai_analysis_limit: planLimits.ai_analysis_limit,
-          ...usage
+          properties_used: properties_used,
+          environments_used: environments_used,
+          photos_uploaded: photos_uploaded,
+          ai_analyses_used: 0 // For now, not tracking this specifically
         });
       }
     } catch (err) {
@@ -168,43 +196,13 @@ export const useSubscription = () => {
     return { used, remaining: Math.max(0, limit - used), unlimited: false };
   }, [userLimits]);
 
-  // Update usage (using localStorage for demo)
-  const updateUsage = useCallback(async (type: 'properties' | 'environments' | 'photos' | 'ai_analyses', count = 1) => {
+  // Update usage (refresh from database)
+  const updateUsage = useCallback(async (_type: 'properties' | 'environments' | 'photos' | 'ai_analyses', _count = 1) => {
     if (!user) return false;
 
     try {
-      const usageKey = `vistoria_usage_${user.id}`;
-      const usageStored = localStorage.getItem(usageKey);
-      let usage = { properties_used: 0, environments_used: 0, photos_uploaded: 0, ai_analyses_used: 0 };
-      
-      if (usageStored) {
-        try {
-          usage = JSON.parse(usageStored);
-        } catch {
-          // Use defaults
-        }
-      }
-
-      // Update the specific type
-      switch (type) {
-        case 'properties':
-          usage.properties_used += count;
-          break;
-        case 'environments':
-          usage.environments_used += count;
-          break;
-        case 'photos':
-          usage.photos_uploaded += count;
-          break;
-        case 'ai_analyses':
-          usage.ai_analyses_used += count;
-          break;
-      }
-
-      // Save back to localStorage
-      localStorage.setItem(usageKey, JSON.stringify(usage));
-      
-      // Refresh limits
+      // Instead of manually tracking, just refresh the counts from database
+      // This ensures we always have accurate counts
       await fetchUserLimits();
       return true;
     } catch (err) {

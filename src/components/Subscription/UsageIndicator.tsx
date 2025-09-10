@@ -67,7 +67,7 @@ const UsageIndicator: React.FC<UsageIndicatorProps> = ({ type, className = '' })
             {getLabel()}
           </span>
           <span className={`font-semibold ${getColorClass()}`}>
-            {usage.used} / {usage.unlimited ? <Infinity className="w-4 h-4 inline" /> : usage.used + usage.remaining}
+            {usage.used} / {usage.unlimited ? <Infinity className="w-4 h-4 inline" /> : (usage.unlimited ? '∞' : usage.used + usage.remaining)}
           </span>
         </div>
         
