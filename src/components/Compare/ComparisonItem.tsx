@@ -119,14 +119,14 @@ const ComparisonItem: React.FC<ComparisonItemProps> = ({ item, type }) => {
   const itemDescription = item.entry ? formatObjectDescription(item.entry) : formatObjectDescription(item.exit!);
 
   return (
-    <div className="p-3 bg-gray-50 dark:bg-slate-700/50 rounded-md">
+    <div className="p-3 bg-gray-50 dark:bg-slate-700/50 rounded-md report-section">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{itemDescription}</span>
         {renderContent()}
       </div>
       
       {/* Photo Comparison Module */}
-      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-gray-200 dark:border-slate-600">
+      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-gray-200 dark:border-slate-600 report-photo-analysis">
         {type === 'missing' ? (
           // For missing items, show the entry photo with green marker and exit photo with red "missing" marker
           <>
