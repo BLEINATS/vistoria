@@ -141,8 +141,7 @@ const Profile: React.FC = () => {
         .upsert({
           id: user!.id,
           full_name: profileData.fullName,
-          avatar_url: avatarUrl,
-          updated_at: new Date().toISOString()
+          avatar_url: avatarUrl
         });
 
       if (profileError) throw profileError;
