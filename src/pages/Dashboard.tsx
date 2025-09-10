@@ -165,32 +165,59 @@ const Dashboard: React.FC = () => {
       // Conta apenas itens faltando da última vistoria
       let criticalIssuesCount = 0;
       
-      // Buscar a última vistoria de SAÍDA concluída
+      // Usar a mesma lógica do relatório comparativo para garantir consistência
       const exitInspections = inspectionsData.filter(i => 
         i.status === 'completed' && i.inspection_type === 'exit'
       );
       
       if (exitInspections.length > 0) {
-        // Pegar a mais recente
+        // Pegar a mais recente vistoria de saída
         const latestExitInspection = exitInspections
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
         
-        // Buscar fotos dessa vistoria
-        const exitPhotos = photosData.filter(photo => 
-          photo.inspection_id === latestExitInspection.id
+        // Buscar a vistoria de entrada correspondente da mesma propriedade
+        const entryInspection = inspectionsData.find(i => 
+          i.property_id === latestExitInspection.property_id && 
+          i.inspection_type === 'entry' && 
+          i.status === 'completed'
         );
         
-        // Contar itens faltando nessas fotos
-        exitPhotos.forEach(photo => {
-          const analysisResult = photo.ai_analysis_result || photo.analysis_result;
-          if (analysisResult?.objectsDetected) {
-            analysisResult.objectsDetected.forEach((obj: any) => {
-              if (obj.condition === 'not_found') {
-                criticalIssuesCount++;
+        if (entryInspection) {
+          // Buscar fotos de ambas as vistorias
+          const entryPhotos = photosData.filter(p => p.inspection_id === entryInspection.id);
+          const exitPhotos = photosData.filter(p => p.inspection_id === latestExitInspection.id);
+          
+          // Aplicar a mesma lógica do relatório comparativo
+          const allRooms = [...new Set([...entryPhotos.map(p => p.room), ...exitPhotos.map(p => p.room)])];
+          
+          allRooms.forEach(room => {
+            const entryObjects = entryPhotos
+              .filter(p => p.room === room)
+              .flatMap(p => (p.ai_analysis_result?.objectsDetected || p.analysis_result?.objectsDetected || []));
+              
+            const exitObjects = exitPhotos
+              .filter(p => p.room === room)
+              .flatMap(p => (p.ai_analysis_result?.objectsDetected || p.analysis_result?.objectsDetected || []));
+
+            const missingItems = [...entryObjects];
+
+            exitObjects.forEach(exitObj => {
+              if (exitObj.condition === 'not_found') {
+                return; // Não remove do missingItems
+              }
+
+              const bestMatchIndex = missingItems.findIndex(entryObj => 
+                entryObj.item.toLowerCase().trim() === exitObj.item.toLowerCase().trim()
+              );
+
+              if (bestMatchIndex > -1) {
+                missingItems.splice(bestMatchIndex, 1); // Remove item pareado
               }
             });
-          }
-        });
+            
+            criticalIssuesCount += missingItems.length;
+          });
+        }
       }
 
       const dashboardStats: DashboardStats = {
