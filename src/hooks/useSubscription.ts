@@ -11,6 +11,28 @@ export const useSubscription = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Static plan limits mapping to prevent dependency loops
+  const PLAN_LIMITS = {
+    'Gratuito': {
+      properties_limit: 1,
+      environments_limit: 3,
+      photos_per_environment_limit: 5,
+      ai_analysis_limit: null
+    },
+    'Básico': {
+      properties_limit: 2,
+      environments_limit: null,
+      photos_per_environment_limit: 5,
+      ai_analysis_limit: null
+    },
+    'Premium': {
+      properties_limit: null,
+      environments_limit: null,
+      photos_per_environment_limit: 5,
+      ai_analysis_limit: null
+    }
+  };
+
   // Use static plans to prevent database cache issues
   const fetchPlans = useCallback(async () => {
     // Temporarily using static data to prevent cache issues
@@ -119,26 +141,24 @@ export const useSubscription = () => {
         photos_uploaded = 0;
       }
 
-      // Set limits based on plan
-      const planLimits = plans.find(p => p.name === planName);
-      if (planLimits) {
-        setUserLimits({
-          plan_name: planName,
-          properties_limit: planLimits.properties_limit,
-          environments_limit: planLimits.environments_limit,
-          photos_per_environment_limit: planLimits.photos_per_environment_limit,
-          ai_analysis_limit: planLimits.ai_analysis_limit,
-          properties_used: properties_used,
-          environments_used: environments_used,
-          photos_uploaded: photos_uploaded,
-          ai_analyses_used: 0 // For now, not tracking this specifically
-        });
-      }
+      // Set limits based on plan using static mapping
+      const planLimits = PLAN_LIMITS[planName as keyof typeof PLAN_LIMITS] || PLAN_LIMITS['Gratuito'];
+      setUserLimits({
+        plan_name: planName,
+        properties_limit: planLimits.properties_limit,
+        environments_limit: planLimits.environments_limit,
+        photos_per_environment_limit: planLimits.photos_per_environment_limit,
+        ai_analysis_limit: planLimits.ai_analysis_limit,
+        properties_used: properties_used,
+        environments_used: environments_used,
+        photos_uploaded: photos_uploaded,
+        ai_analyses_used: 0 // For now, not tracking this specifically
+      });
     } catch (err) {
       console.error('Error fetching user limits:', err);
       setError('Erro ao carregar limites do usuário');
     }
-  }, [user, plans]);
+  }, [user]);
 
   // Skip subscription fetch to prevent cache issues
   const fetchCurrentSubscription = useCallback(async () => {
@@ -202,20 +222,31 @@ export const useSubscription = () => {
     }
   }, [user, fetchUserLimits]);
 
-  // Initialize data
+  // Initialize plans once
   useEffect(() => {
-    const initializeData = async () => {
-      setLoading(true);
-      await Promise.all([
-        fetchPlans(),
-        fetchUserLimits(),
-        fetchCurrentSubscription()
-      ]);
-      setLoading(false);
-    };
+    fetchPlans();
+  }, []);
 
-    initializeData();
-  }, [fetchPlans, fetchUserLimits, fetchCurrentSubscription]);
+  // Initialize user limits when user changes
+  useEffect(() => {
+    if (user) {
+      fetchUserLimits();
+    }
+  }, [user, fetchUserLimits]);
+
+  // Initialize subscription when user changes
+  useEffect(() => {
+    if (user) {
+      fetchCurrentSubscription();
+    }
+  }, [user, fetchCurrentSubscription]);
+
+  // Set loading to false when data is ready
+  useEffect(() => {
+    if (plans.length > 0 && (userLimits !== null || !user)) {
+      setLoading(false);
+    }
+  }, [plans, userLimits, user]);
 
   return {
     plans,
