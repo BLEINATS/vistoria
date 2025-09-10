@@ -54,6 +54,7 @@ A React/TypeScript application for property inspections with Supabase backend in
   - **Synchronized counting logic**: Updated Dashboard to use identical logic as comparative report for counting missing items, ensuring exact number matching between dashboard and reports
   - **Fixed mobile scrolling issue**: Corrected GlowCard animation component to allow normal page scrolling on mobile devices while preserving desktop hover effects
   - **Enhanced quick actions intelligence**: Updated Dashboard quick actions to redirect smartly - "Nova Vistoria" goes to latest property/inspection, "Relatórios" goes to latest comparative report
+  - **Renamed quick action**: Changed "Nova Vistoria" to "Última Vistoria" and updated to redirect to Property Management page of latest property
 
 ## Previous Changes (2025-09-09)
 - Configured Vite server for Replit environment (host: 0.0.0.0, port: 5000)
