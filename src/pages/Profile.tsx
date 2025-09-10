@@ -80,17 +80,39 @@ const Profile: React.FC = () => {
     };
     
     try {
+      console.log('Fetching profile for user:', user.id);
+      
       // Carregar apenas campos que EXISTEM na tabela real
-      const { data: basicData } = await supabase
+      const { data: basicData, error } = await supabase
         .from('profiles')
         .select('full_name, avatar_url')
         .eq('id', user.id)
         .single();
 
-      if (basicData) {
+      console.log('Profile query result:', { basicData, error });
+
+      if (basicData && !error) {
         baseProfileInfo.fullName = basicData.full_name || '';
         baseProfileInfo.avatarUrl = basicData.avatar_url || '';
-        // Phone e company ficam vazios pois não existem na tabela
+        console.log('Profile loaded successfully:', basicData);
+      } else {
+        console.log('No profile data found or error occurred:', error);
+        // Se não existe, criar um registro básico
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({ 
+            id: user.id, 
+            full_name: user.email?.split('@')[0] || 'Usuário',
+            avatar_url: '' 
+          })
+          .select()
+          .single();
+        
+        if (newProfile && !insertError) {
+          baseProfileInfo.fullName = newProfile.full_name || '';
+          baseProfileInfo.avatarUrl = newProfile.avatar_url || '';
+          console.log('Profile created successfully:', newProfile);
+        }
       }
 
       setProfileData(baseProfileInfo);

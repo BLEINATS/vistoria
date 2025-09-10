@@ -47,8 +47,19 @@ const Header: React.FC = () => {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/login');
+    console.log('Iniciando logout...');
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Erro no logout:', error);
+      } else {
+        console.log('Logout realizado com sucesso');
+        navigate('/login');
+      }
+    } catch (error) {
+      console.error('Erro inesperado no logout:', error);
+      navigate('/login'); // Navegar mesmo com erro
+    }
   };
 
   const navigation = [
