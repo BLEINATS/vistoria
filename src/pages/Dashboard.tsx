@@ -1,1 +1,498 @@
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { supabase, mapToProperty } from '../lib/supabase';
+import { Property, InspectionPhoto } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { 
+  Home, 
+  Camera, 
+  TrendingUp, 
+  AlertTriangle, 
+  CheckCircle, 
+  Clock, 
+  Plus,
+  Eye,
+  FileText,
+  Users,
+  Calendar,
+  Target,
+  BarChart3,
+  Activity
+} from 'lucide-react';
+import ReactECharts from 'echarts-for-react';
+import { motion } from 'framer-motion';
 
+interface DashboardStats {
+  totalProperties: number;
+  totalInspections: number;
+  pendingInspections: number;
+  completedInspections: number;
+  avgInspectionTime: number;
+  criticalIssues: number;
+  recentActivity: Array<{
+    type: 'property' | 'inspection' | 'report';
+    title: string;
+    date: Date;
+    propertyName?: string;
+  }>;
+  monthlyInspections: Array<{ month: string; entry: number; exit: number }>;
+  issueTypes: Array<{ name: string; count: number; severity: 'low' | 'medium' | 'high' }>;
+}
+
+const Dashboard: React.FC = () => {
+  const { user } = useAuth();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [properties, setProperties] = useState<Property[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      fetchDashboardData();
+    }
+  }, [user]);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch properties
+      const { data: propertiesData, error: propertiesError } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false });
+
+      if (propertiesError) throw propertiesError;
+
+      const mappedProperties = propertiesData.map(mapToProperty);
+      setProperties(mappedProperties);
+
+      // Fetch inspections
+      const { data: inspectionsData, error: inspectionsError } = await supabase
+        .from('inspections')
+        .select('*, properties!inner(*)')
+        .eq('properties.user_id', user!.id);
+
+      if (inspectionsError) throw inspectionsError;
+
+      // Fetch inspection photos for detailed analysis
+      const { data: photosData, error: photosError } = await supabase
+        .from('inspection_photos')
+        .select('*')
+        .in('inspection_id', inspectionsData.map(i => i.id));
+
+      if (photosError) throw photosError;
+
+      // Calculate stats
+      const now = new Date();
+      const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+      
+      const recentInspections = inspectionsData.filter(i => 
+        new Date(i.created_at) >= sixMonthsAgo
+      );
+
+      const completedInspections = inspectionsData.filter(i => i.status === 'completed');
+      const pendingInspections = inspectionsData.filter(i => i.status === 'in_progress');
+
+      // Calculate monthly inspections
+      const monthlyData: { [key: string]: { entry: number; exit: number } } = {};
+      recentInspections.forEach(inspection => {
+        const date = new Date(inspection.created_at);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        if (!monthlyData[monthKey]) {
+          monthlyData[monthKey] = { entry: 0, exit: 0 };
+        }
+        if (inspection.type === 'entry') {
+          monthlyData[monthKey].entry++;
+        } else {
+          monthlyData[monthKey].exit++;
+        }
+      });
+
+      const monthlyInspections = Object.entries(monthlyData)
+        .map(([month, data]) => ({
+          month: new Date(month + '-01').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+          ...data
+        }))
+        .slice(-6);
+
+      // Analyze issues from photos
+      const allIssues: Array<{ name: string; severity: 'low' | 'medium' | 'high' }> = [];
+      photosData.forEach(photo => {
+        if (photo.analysis_result?.issues) {
+          photo.analysis_result.issues.forEach((issue: any) => {
+            const severity = issue.severity || (issue.condition === 'damaged' ? 'high' : 'medium');
+            allIssues.push({ name: issue.description || issue.title, severity });
+          });
+        }
+      });
+
+      const issueTypes = allIssues.reduce((acc, issue) => {
+        const existing = acc.find(i => i.name === issue.name);
+        if (existing) {
+          existing.count++;
+        } else {
+          acc.push({ name: issue.name, count: 1, severity: issue.severity });
+        }
+        return acc;
+      }, [] as Array<{ name: string; count: number; severity: 'low' | 'medium' | 'high' }>)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
+
+      // Recent activity
+      const recentActivity = [
+        ...mappedProperties.slice(0, 3).map(p => ({
+          type: 'property' as const,
+          title: `Propriedade "${p.name}" cadastrada`,
+          date: new Date(p.createdAt),
+          propertyName: p.name
+        })),
+        ...recentInspections.slice(0, 5).map(i => ({
+          type: 'inspection' as const,
+          title: `Vistoria ${i.type === 'entry' ? 'de entrada' : 'de saída'} ${i.status === 'completed' ? 'concluída' : 'iniciada'}`,
+          date: new Date(i.created_at),
+          propertyName: i.properties?.name
+        }))
+      ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 6);
+
+      const dashboardStats: DashboardStats = {
+        totalProperties: mappedProperties.length,
+        totalInspections: inspectionsData.length,
+        pendingInspections: pendingInspections.length,
+        completedInspections: completedInspections.length,
+        avgInspectionTime: completedInspections.length > 0 ? 
+          Math.round(photosData.length / completedInspections.length) : 0,
+        criticalIssues: allIssues.filter(i => i.severity === 'high').length,
+        recentActivity,
+        monthlyInspections,
+        issueTypes
+      };
+
+      setStats(dashboardStats);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getInspectionTrendChart = () => {
+    if (!stats) return {};
+
+    return {
+      title: {
+        text: 'Vistorias por Mês',
+        textStyle: {
+          fontSize: 16,
+          fontWeight: 'bold'
+        }
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' }
+      },
+      legend: {
+        data: ['Entrada', 'Saída']
+      },
+      xAxis: {
+        type: 'category',
+        data: stats.monthlyInspections.map(m => m.month)
+      },
+      yAxis: {
+        type: 'value'
+      },
+      series: [
+        {
+          name: 'Entrada',
+          type: 'bar',
+          data: stats.monthlyInspections.map(m => m.entry),
+          itemStyle: { color: '#3b82f6' }
+        },
+        {
+          name: 'Saída',
+          type: 'bar',
+          data: stats.monthlyInspections.map(m => m.exit),
+          itemStyle: { color: '#ef4444' }
+        }
+      ]
+    };
+  };
+
+  const getIssuesChart = () => {
+    if (!stats) return {};
+
+    return {
+      title: {
+        text: 'Principais Problemas Detectados',
+        textStyle: {
+          fontSize: 16,
+          fontWeight: 'bold'
+        }
+      },
+      tooltip: {
+        trigger: 'item',
+        formatter: '{a} <br/>{b}: {c} ({d}%)'
+      },
+      series: [
+        {
+          name: 'Problemas',
+          type: 'pie',
+          radius: ['40%', '70%'],
+          avoidLabelOverlap: false,
+          itemStyle: {
+            borderRadius: 10,
+            borderColor: '#fff',
+            borderWidth: 2
+          },
+          label: {
+            show: false,
+            position: 'center'
+          },
+          emphasis: {
+            label: {
+              show: true,
+              fontSize: '14',
+              fontWeight: 'bold'
+            }
+          },
+          labelLine: {
+            show: false
+          },
+          data: stats.issueTypes.map((issue, index) => ({
+            value: issue.count,
+            name: issue.name,
+            itemStyle: {
+              color: issue.severity === 'high' ? '#ef4444' : 
+                     issue.severity === 'medium' ? '#f59e0b' : '#10b981'
+            }
+          }))
+        }
+      ]
+    };
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <Activity className="w-12 h-12 animate-pulse text-blue-500 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-300">Carregando dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+            Dashboard VistorIA
+          </h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            Visão geral das suas vistorias e propriedades
+          </p>
+        </div>
+        <Link
+          to="/properties"
+          className="mt-4 lg:mt-0 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          Nova Propriedade
+        </Link>
+      </div>
+
+      {/* Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-slate-700"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total de Imóveis</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats?.totalProperties || 0}</p>
+            </div>
+            <div className="p-3 bg-blue-100 dark:bg-blue-500/20 rounded-full">
+              <Home className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-slate-700"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total de Vistorias</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats?.totalInspections || 0}</p>
+            </div>
+            <div className="p-3 bg-green-100 dark:bg-green-500/20 rounded-full">
+              <Camera className="w-6 h-6 text-green-600 dark:text-green-400" />
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-slate-700"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Em Andamento</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats?.pendingInspections || 0}</p>
+            </div>
+            <div className="p-3 bg-orange-100 dark:bg-orange-500/20 rounded-full">
+              <Clock className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-slate-700"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Problemas Críticos</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats?.criticalIssues || 0}</p>
+            </div>
+            <div className="p-3 bg-red-100 dark:bg-red-500/20 rounded-full">
+              <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Inspection Trends Chart */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-slate-700"
+        >
+          <ReactECharts
+            option={getInspectionTrendChart()}
+            style={{ height: '350px' }}
+            theme="light"
+          />
+        </motion.div>
+
+        {/* Issues Distribution Chart */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-slate-700"
+        >
+          <ReactECharts
+            option={getIssuesChart()}
+            style={{ height: '350px' }}
+            theme="light"
+          />
+        </motion.div>
+      </div>
+
+      {/* Bottom Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Recent Activity */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-slate-700"
+        >
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
+            <Activity className="w-5 h-5 mr-2" />
+            Atividade Recente
+          </h3>
+          <div className="space-y-4">
+            {stats?.recentActivity.map((activity, index) => (
+              <div key={index} className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50 dark:bg-slate-700/50">
+                <div className={`p-2 rounded-full ${
+                  activity.type === 'property' ? 'bg-blue-100 dark:bg-blue-500/20' :
+                  activity.type === 'inspection' ? 'bg-green-100 dark:bg-green-500/20' :
+                  'bg-purple-100 dark:bg-purple-500/20'
+                }`}>
+                  {activity.type === 'property' ? (
+                    <Home className={`w-4 h-4 ${
+                      activity.type === 'property' ? 'text-blue-600 dark:text-blue-400' : ''
+                    }`} />
+                  ) : activity.type === 'inspection' ? (
+                    <Camera className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  ) : (
+                    <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {activity.title}
+                  </p>
+                  {activity.propertyName && (
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      {activity.propertyName}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 dark:text-gray-500">
+                    {activity.date.toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+              </div>
+            )) || (
+              <p className="text-gray-600 dark:text-gray-400 text-center py-8">
+                Nenhuma atividade recente
+              </p>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Quick Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-slate-700"
+        >
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
+            <Target className="w-5 h-5 mr-2" />
+            Ações Rápidas
+          </h3>
+          <div className="space-y-3">
+            <Link
+              to="/properties"
+              className="w-full flex items-center px-4 py-3 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors"
+            >
+              <Home className="w-4 h-4 mr-3" />
+              Gerenciar Imóveis
+            </Link>
+            <Link
+              to="/inspection"
+              className="w-full flex items-center px-4 py-3 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-500/20 transition-colors"
+            >
+              <Camera className="w-4 h-4 mr-3" />
+              Nova Vistoria
+            </Link>
+            <Link
+              to="/reports"
+              className="w-full flex items-center px-4 py-3 bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-colors"
+            >
+              <FileText className="w-4 h-4 mr-3" />
+              Relatórios
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;

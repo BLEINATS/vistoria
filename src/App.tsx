@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout/Layout';
+import Dashboard from './pages/Dashboard';
 import Properties from './pages/Properties';
 import Inspection from './pages/Inspection';
 import Reports from './pages/Reports';
@@ -26,7 +27,8 @@ function App() {
           
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
-              <Route path="/dashboard" element={<Properties />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/properties" element={<Properties />} />
               <Route path="/property/:id" element={<PropertyDetail />} />
               <Route path="/inspection" element={<Inspection />} />
               <Route path="/reports" element={<Reports />} />
