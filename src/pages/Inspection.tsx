@@ -480,20 +480,39 @@ const Inspection: React.FC = () => {
         console.log('💾 Saving observations before navigation...');
         await handleSaveObservations();
         
-        // Update inspection status to indicate it was saved (but not necessarily completed)
+        // Check current status before updating - don't override 'completed' status
         if (photos.length > 0) {
-          console.log('📝 Updating inspection status to in-progress...');
-          const { error } = await supabase
+          console.log('🔍 Checking current inspection status before saving...');
+          const { data: currentData, error: fetchError } = await supabase
             .from('inspections')
-            .update({ status: 'in-progress' })
-            .eq('id', inspectionId);
+            .select('status')
+            .eq('id', inspectionId)
+            .single();
             
-          if (error) {
-            console.error('❌ Error updating inspection status:', error);
-            addToast('Erro ao salvar vistoria', 'error');
+          if (fetchError) {
+            console.error('❌ Error fetching current status:', fetchError);
           } else {
-            console.log('✅ Inspection status updated successfully');
-            addToast('Vistoria salva automaticamente', 'success');
+            console.log('📊 Current inspection status in DB:', currentData.status);
+            
+            // Only update status if it's not already completed
+            if (currentData.status !== 'completed') {
+              console.log('📝 Updating inspection status to in-progress...');
+              const { error } = await supabase
+                .from('inspections')
+                .update({ status: 'in-progress' })
+                .eq('id', inspectionId);
+                
+              if (error) {
+                console.error('❌ Error updating inspection status:', error);
+                addToast('Erro ao salvar vistoria', 'error');
+              } else {
+                console.log('✅ Inspection status updated successfully');
+                addToast('Vistoria salva automaticamente', 'success');
+              }
+            } else {
+              console.log('✅ Inspection already completed, preserving status');
+              addToast('Vistoria concluída mantida', 'success');
+            }
           }
         } else {
           console.log('⚠️ No photos to save, skipping status update');
