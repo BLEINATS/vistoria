@@ -38,9 +38,16 @@ const Login: React.FC = () => {
         }
         setLoading(false);
       } else {
-        console.log('Login successful, redirecting...');
-        setLoading(false);
-        navigate('/dashboard', { replace: true });
+        console.log('✅ Login successful, user authenticated:', data?.user?.id);
+        // Don't redirect immediately - let AuthContext handle the state update first
+        console.log('🔄 Waiting for AuthContext to update...');
+        
+        // Add a small delay to allow AuthContext to process the auth state change
+        setTimeout(() => {
+          console.log('🚀 Redirecting to dashboard...');
+          setLoading(false);
+          navigate('/dashboard', { replace: true });
+        }, 500);
       }
     } catch (err) {
       console.error('Unexpected login error:', err);

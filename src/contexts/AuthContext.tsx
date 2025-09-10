@@ -75,16 +75,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     getSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (_event, newSession) => {
+      async (event, newSession) => {
+        console.log(`🔄 AuthContext: onAuthStateChange - ${event}`, {
+          hasSession: !!newSession,
+          userId: newSession?.user?.id
+        });
+        
         const currentUser = newSession?.user ?? null;
         setSession(newSession);
         setUser(currentUser);
         
         if (currentUser) {
+          console.log('✅ AuthContext: Usuário autenticado, buscando perfil...');
           await fetchProfile(currentUser.id);
         } else {
+          console.log('❌ AuthContext: Usuário deslogado');
           setProfile(null);
         }
+        console.log('🏁 AuthContext: Estado atualizado, loading = false');
         setLoading(false);
       }
     );
