@@ -185,7 +185,7 @@ export const useSubscription = () => {
       }
     };
 
-    const handleCustomEvent = (e: CustomEvent) => {
+    const handleCustomEvent = (_e: CustomEvent) => {
       if (user && fetchUserLimitsRef.current) {
         // Refresh user limits when subscription changes in same tab
         fetchUserLimitsRef.current();
@@ -213,15 +213,42 @@ export const useSubscription = () => {
     };
   }, [user]);
 
-  // Skip subscription fetch to prevent cache issues
+  // Fetch current user subscription from database
   const fetchCurrentSubscription = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setCurrentSubscription(null);
+      return;
+    }
     
-    // Temporarily disable subscription fetching to prevent cache loop
-    setCurrentSubscription(null);
-    
-    // Simulate delay
-    await new Promise(resolve => setTimeout(resolve, 50));
+    try {
+      // Fetch active subscription from database
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching subscription:', error);
+        // If user has no active subscription, default to Gratuito (free plan)
+        setCurrentSubscription(null);
+        return;
+      }
+      
+      if (data) {
+        setCurrentSubscription(data);
+      } else {
+        // No active subscription found, user is on free plan
+        setCurrentSubscription(null);
+      }
+      
+    } catch (error) {
+      console.error('Unexpected error fetching subscription:', error);
+      setCurrentSubscription(null);
+    }
   }, [user]);
 
   // Check if user can perform an action based on limits
