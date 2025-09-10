@@ -10,6 +10,13 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // Clear form fields when component mounts (after logout)
+  useEffect(() => {
+    setEmail('');
+    setPassword('');
+    setError(null);
+  }, []);
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
@@ -17,9 +24,15 @@ const Login: React.FC = () => {
   const [resetMessage, setResetMessage] = useState<string | null>(null);
 
   // Redirect to dashboard if user is already authenticated
+  // Add delay to prevent race condition with logout
   useEffect(() => {
     if (user && !authLoading) {
-      navigate('/dashboard', { replace: true });
+      // Small delay to avoid race condition with logout
+      const timer = setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+      }, 150);
+      
+      return () => clearTimeout(timer);
     }
   }, [user, authLoading, navigate]);
 
@@ -110,9 +123,13 @@ const Login: React.FC = () => {
                   name="email"
                   type="email"
                   autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Digite seu email"
                   className="block w-full rounded-md border-0 py-2.5 pl-10 text-gray-900 dark:text-white dark:bg-slate-700 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-slate-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
                 />
               </div>
@@ -128,10 +145,14 @@ const Login: React.FC = () => {
                   id="password"
                   name="password"
                   type="password"
-                  autoComplete="off"
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Digite sua senha"
                   className="block w-full rounded-md border-0 py-2.5 pl-10 text-gray-900 dark:text-white dark:bg-slate-700 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-slate-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
                 />
               </div>

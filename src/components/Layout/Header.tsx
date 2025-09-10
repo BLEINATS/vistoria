@@ -65,15 +65,20 @@ const Header: React.FC = () => {
         console.log('Logout realizado com sucesso');
       }
       
+      // Aguardar um pouco para garantir que o AuthContext processe o logout
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Sempre navegar para login, independente de erro na sessão
-      navigate('/login');
+      navigate('/login', { replace: true });
       
     } catch (error) {
       console.log('Erro inesperado no logout, fazendo logout local:', error);
       // Limpar dados e navegar mesmo com erro
       localStorage.clear();
       sessionStorage.clear();
-      navigate('/login');
+      // Aguardar antes de navegar
+      await new Promise(resolve => setTimeout(resolve, 100));
+      navigate('/login', { replace: true });
     }
   };
 
