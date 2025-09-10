@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, MapPin, Loader, Plus, Trash2, Check, Mic, AlertTriangle, Layers, Save, Info } from 'lucide-react';
+import { ArrowLeft, FileText, MapPin, Loader, Plus, Check, Mic, AlertTriangle, Layers, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 import RoomInspectionCard from '../components/Inspection/RoomInspectionCard';
 import { Property, AIAnalysisResult, InspectionPhoto, DetectedObject, DetectedIssue } from '../types';
@@ -498,6 +498,9 @@ const Inspection: React.FC = () => {
       addToast(`Falha ao finalizar a vistoria: ${error.message}`, 'error');
       return;
     }
+    
+    // Update local status to reflect the change
+    setInspectionStatus('completed');
     
     navigate('/reports', { 
       state: { inspectionId } 
