@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase, mapToProperty } from '../lib/supabase';
 import { Property, InspectionSummary } from '../types';
-import { Loader, ArrowLeft, MapPin, Building, Calendar, FileText, Camera, CheckCircle, Clock, AlertCircle, GitCompareArrows, Pencil } from 'lucide-react';
+import { Loader, ArrowLeft, MapPin, Building, Calendar, FileText, Camera, CheckCircle, Clock, AlertCircle, GitCompareArrows, Pencil, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '../contexts/AuthContext';
@@ -14,14 +14,19 @@ const PropertyDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
 
-  const fetchProperty = useCallback(async () => {
+  const fetchProperty = useCallback(async (showLoading = true) => {
     if (!id) {
       setLoading(false);
       return;
     }
-    setLoading(true);
+    
+    if (showLoading) setLoading(true);
+    
     try {
-      const { data, error } = await supabase.rpc('get_property_details_by_id', { p_id: id });
+      // Force a fresh query by adding a timestamp parameter to bypass any caching
+      const { data, error } = await supabase.rpc('get_property_details_by_id', { 
+        p_id: id 
+      });
       
       if (error) throw error;
       if (!data || data.length === 0) throw new Error("Imóvel não encontrado");
@@ -30,17 +35,33 @@ const PropertyDetail: React.FC = () => {
       if (!mapped) throw new Error("Falha ao mapear dados do imóvel");
 
       setProperty(mapped);
+      console.log('Property data refreshed:', mapped.inspections?.length || 0, 'inspections found');
     } catch (error) {
       console.error("Failed to fetch property:", error);
       setProperty(null);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
-  }, [id, profile]);
+  }, [id, profile?.full_name]); // Only depend on id and full_name, not the entire profile object
 
   useEffect(() => {
     fetchProperty();
   }, [fetchProperty]);
+
+  // Add window focus listener to refresh data when user returns to the page
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('Window focused, refreshing property data...');
+      fetchProperty(false); // Refresh without showing loading spinner
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [fetchProperty]);
+
+  const handleRefresh = async () => {
+    await fetchProperty(false);
+  };
 
   if (loading) {
     return (
@@ -167,7 +188,17 @@ const PropertyDetail: React.FC = () => {
           <div className="flex flex-col md:flex-row gap-6">
             <img src={property.facadePhoto || `https://source.unsplash.com/random/800x600?building&sig=${property.id}`} alt={`Fachada de ${property.name}`} className="w-full md:w-1/3 h-64 object-cover rounded-lg" />
             <div className="flex-1 space-y-4">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{property.name}</h1>
+              <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{property.name}</h1>
+                <button
+                  onClick={handleRefresh}
+                  className="flex items-center px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md transition-colors"
+                  title="Atualizar dados"
+                >
+                  <RefreshCw className="w-4 h-4 mr-1" />
+                  Atualizar
+                </button>
+              </div>
               <div className="flex items-center text-gray-600 dark:text-gray-400"><Building className="w-4 h-4 mr-2" /><span>{getPropertyTypeLabel(property.type)}</span></div>
               <div className="flex items-center text-gray-600 dark:text-gray-400"><MapPin className="w-4 h-4 mr-2" /><span>{property.address}</span></div>
               <div className="flex items-center text-gray-600 dark:text-gray-400"><Calendar className="w-4 h-4 mr-2" /><span>Cadastrado em: {format(new Date(property.createdAt), 'dd/MM/yyyy', { locale: ptBR })}</span></div>
