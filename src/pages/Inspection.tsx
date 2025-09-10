@@ -28,12 +28,79 @@ const getRealAIAnalysis = async (imageUrl: string, roomName: string, entryObject
     issues: Omit<DetectedIssue, 'id' | 'isManual'>[];
   };
 
+  // Generate automatic marker coordinates for detected objects
+  const generateMarkerCoordinates = (objectName: string, index: number, total: number): { x: number; y: number } => {
+    // Common object positions based on typical room layouts
+    const objectPositions: { [key: string]: { x: number; y: number } } = {
+      // Bathroom items
+      'vaso sanitário': { x: 25, y: 70 },
+      'pia': { x: 75, y: 60 },
+      'torneira': { x: 75, y: 50 },
+      'espelho': { x: 75, y: 30 },
+      'chuveiro': { x: 20, y: 30 },
+      'ralo': { x: 20, y: 85 },
+      'porta-toalhas': { x: 60, y: 40 },
+      'suporte de papel higiênico': { x: 15, y: 60 },
+      'iluminação': { x: 50, y: 15 },
+      'lixeira': { x: 80, y: 80 },
+      'tapete': { x: 40, y: 75 },
+      'toalhas': { x: 60, y: 40 },
+      
+      // Kitchen items  
+      'geladeira': { x: 20, y: 50 },
+      'fogão': { x: 50, y: 60 },
+      'micro-ondas': { x: 70, y: 40 },
+      'pia da cozinha': { x: 75, y: 65 },
+      'armário': { x: 50, y: 30 },
+      'gaveta': { x: 50, y: 70 },
+      
+      // Living room items
+      'sofá': { x: 50, y: 70 },
+      'televisão': { x: 50, y: 40 },
+      'mesa de centro': { x: 50, y: 60 },
+      'poltrona': { x: 25, y: 65 },
+      'estante': { x: 20, y: 40 },
+      
+      // Bedroom items
+      'cama': { x: 50, y: 60 },
+      'guarda-roupa': { x: 20, y: 40 },
+      'criado-mudo': { x: 75, y: 55 },
+      'cômoda': { x: 80, y: 40 },
+      
+      // General items
+      'janela': { x: 80, y: 30 },
+      'porta': { x: 10, y: 50 },
+      'interruptor': { x: 15, y: 45 },
+      'tomada': { x: 20, y: 75 },
+      'cortina': { x: 80, y: 30 },
+      'ventilador': { x: 50, y: 20 }
+    };
+
+    // Try to find specific position for the object
+    const specificPosition = objectPositions[objectName.toLowerCase()];
+    if (specificPosition) {
+      return specificPosition;
+    }
+
+    // For unknown objects, distribute them evenly across the image
+    const columns = Math.ceil(Math.sqrt(total));
+    const row = Math.floor(index / columns);
+    const col = index % columns;
+    
+    return {
+      x: 20 + (col * 60 / Math.max(1, columns - 1)),
+      y: 25 + (row * 50 / Math.max(1, Math.ceil(total / columns) - 1))
+    };
+  };
+
   const processedAnalysis: AIAnalysisResult = {
     ...rawAnalysis,
-    objectsDetected: (rawAnalysis.objectsDetected || []).map(obj => ({
+    objectsDetected: (rawAnalysis.objectsDetected || []).map((obj, index, array) => ({
       ...obj,
       id: crypto.randomUUID(),
       isManual: false,
+      // Generate automatic marker coordinates if not provided by AI
+      markerCoordinates: obj.markerCoordinates || generateMarkerCoordinates(obj.item, index, array.length),
     })),
     issues: (rawAnalysis.issues || []).map(issue => ({
       ...issue,
