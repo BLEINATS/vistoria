@@ -1,22 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase, mapToProperty } from '../lib/supabase';
-import { Property, InspectionPhoto } from '../types';
+import { Property } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   Home, 
   Camera, 
-  TrendingUp, 
   AlertTriangle, 
-  CheckCircle, 
   Clock, 
   Plus,
-  Eye,
   FileText,
-  Users,
-  Calendar,
   Target,
-  BarChart3,
   Activity
 } from 'lucide-react';
 import ReactECharts from 'echarts-for-react';
@@ -43,7 +37,6 @@ const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [properties, setProperties] = useState<Property[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -64,8 +57,7 @@ const Dashboard: React.FC = () => {
 
       if (propertiesError) throw propertiesError;
 
-      const mappedProperties = propertiesData.map(mapToProperty);
-      setProperties(mappedProperties);
+      const mappedProperties = propertiesData.map(row => mapToProperty(row)).filter((p): p is Property => p !== null);
 
       // Fetch inspections
       const { data: inspectionsData, error: inspectionsError } = await supabase
@@ -258,7 +250,7 @@ const Dashboard: React.FC = () => {
           labelLine: {
             show: false
           },
-          data: stats.issueTypes.map((issue, index) => ({
+          data: stats.issueTypes.map((issue) => ({
             value: issue.count,
             name: issue.name,
             itemStyle: {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Camera, LogOut, User } from 'lucide-react';
+import { LayoutDashboard, Camera, LogOut, User, Home } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../../contexts/AuthContext';
@@ -36,7 +36,8 @@ const Header: React.FC = () => {
   };
 
   const navigation = [
-    { name: 'Meus Imóveis', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Meus Imóveis', href: '/properties', icon: Home },
   ];
 
   return (
