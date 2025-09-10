@@ -85,12 +85,14 @@ const Profile: React.FC = () => {
       // Use only basic fields that definitely exist to avoid cache issues
       const { data: basicData } = await supabase
         .from('profiles')
-        .select('full_name, avatar_url')
+        .select('full_name, phone, company, avatar_url')
         .eq('id', user.id)
         .single();
 
       if (basicData) {
         baseProfileInfo.fullName = basicData.full_name || '';
+        baseProfileInfo.phone = basicData.phone || '';
+        baseProfileInfo.company = basicData.company || '';
         baseProfileInfo.avatarUrl = basicData.avatar_url || '';
       }
 
@@ -113,18 +115,19 @@ const Profile: React.FC = () => {
       console.log('Starting profile update for user:', user?.id);
       console.log('Profile data:', profileData);
 
-      // Primeiro, tentar uma operação muito simples
+      // Atualizar TODOS os campos do perfil
       const updateData = {
-        id: user!.id,
         full_name: profileData.fullName || '',
+        phone: profileData.phone || '',
+        company: profileData.company || '',
+        avatar_url: profileData.avatarUrl || ''
       };
 
-      console.log('Update data:', updateData);
+      console.log('Sending all profile data:', updateData);
 
-      // Usar UPDATE direto ao invés de upsert para evitar problemas de RLS
       const { data, error: profileError } = await supabase
         .from('profiles')
-        .update({ full_name: profileData.fullName || '' })
+        .update(updateData)
         .eq('id', user!.id)
         .select();
 
