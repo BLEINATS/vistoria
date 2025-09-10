@@ -7,7 +7,7 @@ import { useToast } from '../contexts/ToastContext';
 import { ArrowLeft, Check, CreditCard, FileText, Zap, Crown, Sparkles } from 'lucide-react';
 import PaymentModal from '../components/Subscription/PaymentModal';
 import PaymentSuccessModal from '../components/Subscription/PaymentSuccessModal';
-import UsageIndicator from '../components/Subscription/UsageIndicator';
+// import UsageIndicator from '../components/Subscription/UsageIndicator';
 
 const Subscription: React.FC = () => {
   const navigate = useNavigate();

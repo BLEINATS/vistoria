@@ -239,7 +239,7 @@ export const useSubscription = () => {
               billing_type: data.billing_type || 'CREDIT_CARD',
               created_at: data.created_at || new Date().toISOString(),
               updated_at: data.updated_at || new Date().toISOString()
-            });
+            } as Subscription);
             return;
           }
         } catch (e) {
