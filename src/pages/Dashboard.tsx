@@ -162,7 +162,17 @@ const Dashboard: React.FC = () => {
         }))
       ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 6);
 
-      const criticalIssuesCount = allIssues.filter(i => i.severity === 'high').length;
+      // Conta apenas itens faltando na saída (condition: "not_found")
+      let criticalIssuesCount = 0;
+      photosData.forEach(photo => {
+        if (photo.analysis_result?.objectsDetected) {
+          photo.analysis_result.objectsDetected.forEach((obj: any) => {
+            if (obj.condition === 'not_found') {
+              criticalIssuesCount++;
+            }
+          });
+        }
+      });
 
       const dashboardStats: DashboardStats = {
         totalProperties: mappedProperties.length,
@@ -279,7 +289,7 @@ const Dashboard: React.FC = () => {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Problemas Críticos</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Itens Faltando na Saída</p>
               <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats?.criticalIssues || 0}</p>
             </div>
             <div className="p-3 bg-red-100 dark:bg-red-500/20 rounded-full">
