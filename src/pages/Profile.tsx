@@ -217,8 +217,6 @@ const Profile: React.FC = () => {
         return;
       }
 
-      setAvatarFile(file);
-      
       // Create preview URL
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -229,7 +227,6 @@ const Profile: React.FC = () => {
   };
 
   const removeAvatar = () => {
-    setAvatarFile(null);
     setAvatarPreview('');
     setProfileData(prev => ({ ...prev, avatarUrl: '' }));
   };
