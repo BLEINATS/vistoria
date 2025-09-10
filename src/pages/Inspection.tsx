@@ -442,12 +442,17 @@ const Inspection: React.FC = () => {
       
       // Create user-friendly error messages
       let userFriendlyMessage = '';
-      if (e.message?.includes('Failed to send a request to the Edge Function') || e.name === 'FunctionsFetchError') {
-        userFriendlyMessage = 'Serviço de análise temporariamente indisponível. Tente novamente em alguns instantes.';
+      if (e.message?.includes('Failed to send a request to the Edge Function') || 
+          e.name === 'FunctionsFetchError' || 
+          e.name === 'FunctionsHttpError' ||
+          e.message?.includes('Edge Function returned a non-2xx status code')) {
+        userFriendlyMessage = 'Serviço de análise temporariamente indisponível. Tente novamente em alguns instantes ou verifique se há uma chave de API configurada.';
       } else if (e.message?.includes('network') || e.message?.includes('fetch')) {
         userFriendlyMessage = 'Problemas de conexão. Verifique sua internet e tente novamente.';
+      } else if (e.message?.includes('timeout')) {
+        userFriendlyMessage = 'Análise demorou muito para processar. Tente com uma imagem menor ou aguarde alguns minutos.';
       } else {
-        userFriendlyMessage = `Falha na análise da IA: ${e.message}`;
+        userFriendlyMessage = `Análise da foto falhou. Tente novamente ou verifique se a imagem está válida.`;
       }
       
       updateToast(toastId, userFriendlyMessage, 'error');
