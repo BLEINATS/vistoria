@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase, mapToProperty } from '../lib/supabase';
 import { Property } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,8 +35,11 @@ interface DashboardStats {
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastProperty, setLastProperty] = useState<Property | null>(null);
+  const [lastReportData, setLastReportData] = useState<{entryId: string, exitId: string} | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -234,6 +237,33 @@ const Dashboard: React.FC = () => {
       };
 
       setStats(dashboardStats);
+      
+      // Encontrar a última propriedade para ação rápida "Nova Vistoria"
+      if (mappedProperties.length > 0) {
+        const latestProperty = mappedProperties[0]; // Já ordenado por created_at desc
+        setLastProperty(latestProperty);
+      }
+      
+      // Encontrar a última comparação para ação rápida "Relatórios"
+      const propertiesWithBothInspections = mappedProperties.filter(property => {
+        const entryInspection = property.inspections.find(i => i.inspection_type === 'entry' && i.status === 'completed');
+        const exitInspection = property.inspections.find(i => i.inspection_type === 'exit' && i.status === 'completed');
+        return entryInspection && exitInspection;
+      });
+      
+      if (propertiesWithBothInspections.length > 0) {
+        const latestPropertyWithBoth = propertiesWithBothInspections[0];
+        const entryInspection = latestPropertyWithBoth.inspections.find(i => i.inspection_type === 'entry' && i.status === 'completed');
+        const exitInspection = latestPropertyWithBoth.inspections.find(i => i.inspection_type === 'exit' && i.status === 'completed');
+        
+        if (entryInspection && exitInspection) {
+          setLastReportData({
+            entryId: entryInspection.id,
+            exitId: exitInspection.id
+          });
+        }
+      }
+      
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -241,7 +271,48 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // Funções de gráficos removidas pois não são mais utilizadas
+  // Funções para ações rápidas inteligentes
+  const handleNovaVistoria = () => {
+    if (lastProperty) {
+      // Verificar se tem vistoria em andamento ou pode criar uma nova
+      const entryInspection = lastProperty.inspections.find(i => i.inspection_type === 'entry');
+      const exitInspection = lastProperty.inspections.find(i => i.inspection_type === 'exit');
+      
+      if (!entryInspection || entryInspection.status !== 'completed') {
+        // Ir para vistoria de entrada
+        navigate('/inspection', {
+          state: {
+            property: lastProperty,
+            inspectionType: 'entry'
+          }
+        });
+      } else if (!exitInspection || exitInspection.status !== 'completed') {
+        // Ir para vistoria de saída
+        navigate('/inspection', {
+          state: {
+            property: lastProperty,
+            inspectionType: 'exit'
+          }
+        });
+      } else {
+        // Todas concluídas, ir para seleção de propriedade
+        navigate('/properties');
+      }
+    } else {
+      // Nenhuma propriedade, ir para criar uma
+      navigate('/properties');
+    }
+  };
+
+  const handleRelatorios = () => {
+    if (lastReportData) {
+      // Ir direto para o último relatório comparativo
+      navigate(`/compare/${lastReportData.entryId}/${lastReportData.exitId}`);
+    } else {
+      // Nenhum relatório disponível, ir para página de relatórios
+      navigate('/reports');
+    }
+  };
 
   if (loading) {
     return (
@@ -419,20 +490,20 @@ const Dashboard: React.FC = () => {
               <Home className="w-4 h-4 mr-3" />
               Gerenciar Imóveis
             </Link>
-            <Link
-              to="/inspection"
+            <button
+              onClick={handleNovaVistoria}
               className="w-full flex items-center px-4 py-3 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-500/20 transition-colors"
             >
               <Camera className="w-4 h-4 mr-3" />
               Nova Vistoria
-            </Link>
-            <Link
-              to="/reports"
+            </button>
+            <button
+              onClick={handleRelatorios}
               className="w-full flex items-center px-4 py-3 bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-colors"
             >
               <FileText className="w-4 h-4 mr-3" />
               Relatórios
-            </Link>
+            </button>
           </div>
         </motion.div>
       </div>
