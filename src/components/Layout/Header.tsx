@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Camera, LogOut, User, Home } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { LayoutDashboard, Camera, LogOut, User, Home, Settings, ChevronDown, KeyRound } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../../contexts/AuthContext';
@@ -10,6 +10,8 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [userName, setUserName] = useState<string | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -29,6 +31,20 @@ const Header: React.FC = () => {
     };
     fetchProfile();
   }, [user]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -75,22 +91,68 @@ const Header: React.FC = () => {
           </nav>
 
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-slate-700 flex items-center justify-center">
-                <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-              </div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-200 hidden sm:block">
-                Olá, {userName || user?.email?.split('@')[0]}
-              </span>
+            {/* User Menu Dropdown */}
+            <div className="relative" ref={userMenuRef}>
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-slate-700 flex items-center justify-center">
+                  <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                </div>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200 hidden sm:block">
+                  Olá, {userName || user?.email?.split('@')[0]}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Dropdown Menu */}
+              {showUserMenu && (
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 py-1 z-50">
+                  <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {userName || 'Usuário'}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {user?.email}
+                    </p>
+                  </div>
+                  
+                  <Link
+                    to="/profile"
+                    onClick={() => setShowUserMenu(false)}
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    <Settings className="w-4 h-4 mr-3" />
+                    Configurações
+                  </Link>
+                  
+                  <Link
+                    to="/profile/password"
+                    onClick={() => setShowUserMenu(false)}
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    <KeyRound className="w-4 h-4 mr-3" />
+                    Alterar Senha
+                  </Link>
+                  
+                  <div className="border-t border-gray-200 dark:border-slate-700 my-1"></div>
+                  
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      handleLogout();
+                    }}
+                    className="w-full flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4 mr-3" />
+                    Sair
+                  </button>
+                </div>
+              )}
             </div>
+            
             <ThemeToggle />
-            <button
-              onClick={handleLogout}
-              className="p-2 text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full"
-              title="Sair"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
           </div>
         </div>
       </div>
