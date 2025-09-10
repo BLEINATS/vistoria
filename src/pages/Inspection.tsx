@@ -465,7 +465,13 @@ const Inspection: React.FC = () => {
       
       // Create user-friendly error messages
       let userFriendlyMessage = '';
-      if (e.message?.includes('Failed to send a request to the Edge Function') || 
+      if (e.message?.includes('rate limit') || 
+          e.message?.includes('too many requests') ||
+          e.message?.includes('muitas requisições') ||
+          e.context?.error?.message?.includes('rate limit') ||
+          e.context?.error?.message?.includes('too many requests')) {
+        userFriendlyMessage = 'Serviço de análise com muitas requisições . Tente novamente em alguns instantes';
+      } else if (e.message?.includes('Failed to send a request to the Edge Function') || 
           e.name === 'FunctionsFetchError' || 
           e.name === 'FunctionsHttpError' ||
           e.message?.includes('Edge Function returned a non-2xx status code')) {
