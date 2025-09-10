@@ -66,6 +66,29 @@ serve(async (req) => {
 
     const { planId, paymentMethod }: CreateSubscriptionRequest = await req.json()
 
+    // Validate paymentMethod server-side to prevent manipulation
+    const validPaymentMethods: Array<'PIX' | 'BOLETO' | 'CREDIT_CARD'> = ['PIX', 'BOLETO', 'CREDIT_CARD']
+    if (!paymentMethod || !validPaymentMethods.includes(paymentMethod)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid payment method. Must be one of: PIX, BOLETO, CREDIT_CARD' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
+    // Validate planId format to prevent injection attacks
+    if (!planId || typeof planId !== 'string' || planId.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid plan ID' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
     // Get user profile for customer creation
     const { data: profile } = await supabase
       .from('profiles')

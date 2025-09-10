@@ -27,6 +27,26 @@ serve(async (req) => {
   }
 
   try {
+    // Validate Asaas webhook authentication token
+    const asaasWebhookToken = Deno.env.get('ASAAS_WEBHOOK_TOKEN')
+    if (!asaasWebhookToken) {
+      console.error('ASAAS_WEBHOOK_TOKEN not configured')
+      return new Response('Internal server error', { status: 500 })
+    }
+
+    // Get the authentication token from request headers
+    const receivedToken = req.headers.get('asaas-access-token')
+    if (!receivedToken) {
+      console.warn('Webhook request missing asaas-access-token header')
+      return new Response('Unauthorized - Missing authentication token', { status: 401 })
+    }
+
+    // Validate the authentication token
+    if (receivedToken !== asaasWebhookToken) {
+      console.warn('Webhook request with invalid authentication token')
+      return new Response('Unauthorized - Invalid authentication token', { status: 401 })
+    }
+
     // Create Supabase client with service role key for database operations
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -34,7 +54,7 @@ serve(async (req) => {
     )
 
     const webhookEvent: WebhookEvent = await req.json()
-    console.log('Webhook event received:', webhookEvent.event)
+    console.log('Webhook event received from authenticated source:', webhookEvent.event)
 
     switch (webhookEvent.event) {
       case 'PAYMENT_RECEIVED':
