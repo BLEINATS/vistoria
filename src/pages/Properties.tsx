@@ -224,117 +224,139 @@ const Properties: React.FC = () => {
     : '';
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Gerencie seus imóveis e vistorias</p>
-        </div>
-        <PlanLimitGuard action="create_property">
-          <button
-            onClick={handleOpenFormForCreate}
-            className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Novo Imóvel
-          </button>
-        </PlanLimitGuard>
-      </div>
-
-      {/* Usage Indicators */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
-          <UsageIndicator type="properties" />
-        </div>
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
-          <UsageIndicator type="environments" />
-        </div>
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
-          <div className="flex items-center gap-2">
-            <div className="text-blue-600 dark:text-blue-400">
-              <CreditCard className="w-4 h-4" />
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        
+        {/* Header Section */}
+        <div className="mb-8 lg:mb-12">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 lg:gap-6">
+            <div>
+              <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1 text-base lg:text-lg">Gerencie seus imóveis e vistorias</p>
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-700 dark:text-gray-300 font-medium">
-                  Plano Atual
-                </span>
-                <span className="font-semibold text-blue-600 dark:text-blue-400">
-                  {userLimits?.plan_name || 'Carregando...'}
-                </span>
+            <PlanLimitGuard action="create_property">
+              <button
+                onClick={handleOpenFormForCreate}
+                className="inline-flex items-center justify-center px-6 py-3 lg:px-8 lg:py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-md font-medium text-sm lg:text-base"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Novo Imóvel
+              </button>
+            </PlanLimitGuard>
+          </div>
+        </div>
+
+        {/* Usage Indicators - Improved Desktop Layout */}
+        <div className="mb-8 lg:mb-12">
+          <h2 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 lg:mb-6">Status da Conta</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+            <div className="bg-white dark:bg-slate-800 p-4 lg:p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 dark:border-slate-700">
+              <UsageIndicator type="properties" />
+            </div>
+            <div className="bg-white dark:bg-slate-800 p-4 lg:p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 dark:border-slate-700">
+              <UsageIndicator type="environments" />
+            </div>
+            <div className="bg-white dark:bg-slate-800 p-4 lg:p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 dark:border-slate-700 md:col-span-2 xl:col-span-1">
+              <div className="flex items-center gap-3">
+                <div className="text-blue-600 dark:text-blue-400">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-700 dark:text-gray-300 font-medium text-sm lg:text-base">
+                      Plano Atual
+                    </span>
+                    <span className="font-semibold text-blue-600 dark:text-blue-400 text-sm lg:text-base">
+                      {userLimits?.plan_name || 'Carregando...'}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-slate-400 w-5 h-5" />
-        <input
-          type="text"
-          placeholder="Pesquisar por nome ou endereço..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 border border-gray-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 dark:text-white shadow-sm"
-        />
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center items-center py-16">
-          <Loader className="w-12 h-12 text-blue-500 animate-spin" />
-        </div>
-      ) : filteredProperties.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="w-32 h-32 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Home className="w-12 h-12 text-gray-400 dark:text-slate-500" />
+        {/* Search Section */}
+        <div className="mb-8 lg:mb-10">
+          <div className="relative max-w-md lg:max-w-lg">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-slate-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Pesquisar por nome ou endereço..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 lg:py-4 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-800 dark:text-white shadow-sm hover:shadow-md transition-all duration-200 text-sm lg:text-base"
+            />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3">
-            {searchTerm ? 'Nenhum imóvel encontrado' : 'Nenhum imóvel cadastrado'}
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
-            {searchTerm 
-              ? 'Tente ajustar sua pesquisa para encontrar o imóvel desejado' 
-              : 'Comece adicionando seu primeiro imóvel para realizar vistorias'
-            }
-          </p>
-          {!searchTerm && (
-            <PlanLimitGuard action="create_property">
-              <button
-                onClick={handleOpenFormForCreate}
-                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
+        </div>
+
+        {/* Properties Grid */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
+          {loading ? (
+            <div className="flex justify-center items-center py-16 lg:py-24">
+              <Loader className="w-12 h-12 lg:w-16 lg:h-16 text-blue-500 animate-spin" />
+            </div>
+          ) : filteredProperties.length === 0 ? (
+            <div className="text-center py-16 lg:py-24 px-4">
+              <div className="w-32 h-32 lg:w-40 lg:h-40 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-6 lg:mb-8">
+                <Home className="w-12 h-12 lg:w-16 lg:h-16 text-gray-400 dark:text-slate-500" />
+              </div>
+              <h3 className="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-3 lg:mb-4">
+                {searchTerm ? 'Nenhum imóvel encontrado' : 'Nenhum imóvel cadastrado'}
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6 lg:mb-8 max-w-md lg:max-w-lg mx-auto text-base lg:text-lg">
+                {searchTerm 
+                  ? 'Tente ajustar sua pesquisa para encontrar o imóvel desejado' 
+                  : 'Comece adicionando seu primeiro imóvel para realizar vistorias'
+                }
+              </p>
+              {!searchTerm && (
+                <PlanLimitGuard action="create_property">
+                  <button
+                    onClick={handleOpenFormForCreate}
+                    className="inline-flex items-center px-6 py-3 lg:px-8 lg:py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-md font-medium text-sm lg:text-base"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Cadastrar Primeiro Imóvel
+                  </button>
+                </PlanLimitGuard>
+              )}
+            </div>
+          ) : (
+            <div className="p-4 lg:p-6">
+              <div className="mb-4 lg:mb-6">
+                <h2 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-gray-100">Meus Imóveis</h2>
+                <p className="text-gray-600 dark:text-gray-400 text-sm lg:text-base mt-1">Total: {filteredProperties.length} imóvel{filteredProperties.length !== 1 ? 's' : ''}</p>
+              </div>
+              <motion.div 
+                className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 lg:gap-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
               >
-                <Plus className="w-5 h-5 mr-2" />
-                Cadastrar Primeiro Imóvel
-              </button>
-            </PlanLimitGuard>
+                {filteredProperties.map((property, index) => (
+                  <motion.div
+                    key={property.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.2, delay: index * 0.05 }}
+                  >
+                    <PropertyCard
+                      property={property}
+                      onViewDetails={handleViewDetails}
+                      onEdit={handleEditProperty}
+                      onDelete={handleDeleteProperty}
+                      onViewReport={handleViewReport}
+                    />
+                  </motion.div>
+                ))}
+              </motion.div>
+            </div>
           )}
         </div>
-      ) : (
-        <motion.div 
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          {filteredProperties.map((property, index) => (
-            <motion.div
-              key={property.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.2, delay: index * 0.05 }}
-            >
-              <PropertyCard
-                property={property}
-                onViewDetails={handleViewDetails}
-                onEdit={handleEditProperty}
-                onDelete={handleDeleteProperty}
-                onViewReport={handleViewReport}
-              />
-            </motion.div>
-          ))}
-        </motion.div>
-      )}
 
+      </div>
+      
       <PropertyForm
         isOpen={showForm}
         onClose={() => { setShowForm(false); setPropertyToEdit(null); }}

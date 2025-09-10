@@ -56,26 +56,26 @@ const UsageIndicator: React.FC<UsageIndicatorProps> = ({ type, className = '' })
   };
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <div className={`${getColorClass()}`}>
+    <div className={`flex items-center gap-3 lg:gap-4 ${className}`}>
+      <div className={`${getColorClass()} p-2 lg:p-3 rounded-lg bg-opacity-10 ${getColorClass().includes('text-blue') ? 'bg-blue-500' : getColorClass().includes('text-green') ? 'bg-green-500' : getColorClass().includes('text-yellow') ? 'bg-yellow-500' : 'bg-red-500'} bg-opacity-10`}>
         {getIcon()}
       </div>
       
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center justify-between text-sm lg:text-base mb-1">
           <span className="text-gray-700 dark:text-gray-300 font-medium">
             {getLabel()}
           </span>
-          <span className={`font-semibold ${getColorClass()}`}>
+          <span className={`font-semibold ${getColorClass()} text-sm lg:text-base`}>
             {usage.used} / {usage.unlimited ? <Infinity className="w-4 h-4 inline" /> : (usage.unlimited ? '∞' : usage.used + usage.remaining)}
           </span>
         </div>
         
         {!usage.unlimited && (
-          <div className="mt-1">
-            <div className="h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+          <div className="mt-2">
+            <div className="h-2 lg:h-3 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
               <div 
-                className={`h-full transition-all duration-300 ${getProgressColor()}`}
+                className={`h-full transition-all duration-300 ${getProgressColor()} rounded-full`}
                 style={{ width: `${Math.min(percentage, 100)}%` }}
               ></div>
             </div>
@@ -83,8 +83,8 @@ const UsageIndicator: React.FC<UsageIndicatorProps> = ({ type, className = '' })
         )}
         
         {usage.unlimited && (
-          <div className="mt-1 text-xs text-green-600 dark:text-green-400 font-medium">
-            Ilimitado
+          <div className="mt-2 text-xs lg:text-sm text-green-600 dark:text-green-400 font-medium">
+            Uso Ilimitado
           </div>
         )}
       </div>
