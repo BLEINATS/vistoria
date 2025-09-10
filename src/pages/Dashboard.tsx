@@ -13,7 +13,7 @@ import {
   Target,
   Activity
 } from 'lucide-react';
-import ReactECharts from 'echarts-for-react';
+// import ReactECharts from 'echarts-for-react'; // Removido pois gráficos foram excluídos
 import { motion } from 'framer-motion';
 
 interface DashboardStats {
@@ -108,9 +108,24 @@ const Dashboard: React.FC = () => {
         }))
         .slice(-6);
 
-      // Analyze issues from photos
+      // Analyze issues from photos - Corrigir lógica de detecção de problemas críticos
       const allIssues: Array<{ name: string; severity: 'low' | 'medium' | 'high' }> = [];
       photosData.forEach(photo => {
+        // Verificar em analysis_result.objectsDetected onde estão os problemas reais
+        if (photo.analysis_result?.objectsDetected) {
+          photo.analysis_result.objectsDetected.forEach((obj: any) => {
+            // Problemas críticos são itens danificados ou não encontrados
+            if (obj.condition === 'damaged' || obj.condition === 'not_found') {
+              const severity = obj.condition === 'not_found' ? 'high' : 
+                             obj.condition === 'damaged' ? 'high' : 'medium';
+              allIssues.push({ 
+                name: obj.item || obj.description || 'Item não identificado', 
+                severity 
+              });
+            }
+          });
+        }
+        // Também verificar se há issues em outros formatos
         if (photo.analysis_result?.issues) {
           photo.analysis_result.issues.forEach((issue: any) => {
             const severity = issue.severity || (issue.condition === 'damaged' ? 'high' : 'medium');
@@ -147,6 +162,8 @@ const Dashboard: React.FC = () => {
         }))
       ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 6);
 
+      const criticalIssuesCount = allIssues.filter(i => i.severity === 'high').length;
+
       const dashboardStats: DashboardStats = {
         totalProperties: mappedProperties.length,
         totalInspections: inspectionsData.length,
@@ -154,7 +171,7 @@ const Dashboard: React.FC = () => {
         completedInspections: completedInspections.length,
         avgInspectionTime: completedInspections.length > 0 ? 
           Math.round(photosData.length / completedInspections.length) : 0,
-        criticalIssues: allIssues.filter(i => i.severity === 'high').length,
+        criticalIssues: criticalIssuesCount,
         recentActivity,
         monthlyInspections,
         issueTypes
@@ -168,100 +185,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const getInspectionTrendChart = () => {
-    if (!stats) return {};
-
-    return {
-      title: {
-        text: 'Vistorias por Mês',
-        textStyle: {
-          fontSize: 16,
-          fontWeight: 'bold'
-        }
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: 'shadow' }
-      },
-      legend: {
-        data: ['Entrada', 'Saída']
-      },
-      xAxis: {
-        type: 'category',
-        data: stats.monthlyInspections.map(m => m.month)
-      },
-      yAxis: {
-        type: 'value'
-      },
-      series: [
-        {
-          name: 'Entrada',
-          type: 'bar',
-          data: stats.monthlyInspections.map(m => m.entry),
-          itemStyle: { color: '#3b82f6' }
-        },
-        {
-          name: 'Saída',
-          type: 'bar',
-          data: stats.monthlyInspections.map(m => m.exit),
-          itemStyle: { color: '#ef4444' }
-        }
-      ]
-    };
-  };
-
-  const getIssuesChart = () => {
-    if (!stats) return {};
-
-    return {
-      title: {
-        text: 'Principais Problemas Detectados',
-        textStyle: {
-          fontSize: 16,
-          fontWeight: 'bold'
-        }
-      },
-      tooltip: {
-        trigger: 'item',
-        formatter: '{a} <br/>{b}: {c} ({d}%)'
-      },
-      series: [
-        {
-          name: 'Problemas',
-          type: 'pie',
-          radius: ['40%', '70%'],
-          avoidLabelOverlap: false,
-          itemStyle: {
-            borderRadius: 10,
-            borderColor: '#fff',
-            borderWidth: 2
-          },
-          label: {
-            show: false,
-            position: 'center'
-          },
-          emphasis: {
-            label: {
-              show: true,
-              fontSize: '14',
-              fontWeight: 'bold'
-            }
-          },
-          labelLine: {
-            show: false
-          },
-          data: stats.issueTypes.map((issue) => ({
-            value: issue.count,
-            name: issue.name,
-            itemStyle: {
-              color: issue.severity === 'high' ? '#ef4444' : 
-                     issue.severity === 'medium' ? '#f59e0b' : '#10b981'
-            }
-          }))
-        }
-      ]
-    };
-  };
+  // Funções de gráficos removidas pois não são mais utilizadas
 
   if (loading) {
     return (
@@ -365,34 +289,7 @@ const Dashboard: React.FC = () => {
         </motion.div>
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Inspection Trends Chart */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-slate-700"
-        >
-          <ReactECharts
-            option={getInspectionTrendChart()}
-            style={{ height: '350px' }}
-            theme="light"
-          />
-        </motion.div>
-
-        {/* Issues Distribution Chart */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-slate-700"
-        >
-          <ReactECharts
-            option={getIssuesChart()}
-            style={{ height: '350px' }}
-            theme="light"
-          />
-        </motion.div>
-      </div>
+      {/* Gráficos removidos conforme solicitado */}
 
       {/* Bottom Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
