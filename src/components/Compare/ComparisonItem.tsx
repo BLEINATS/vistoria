@@ -44,6 +44,7 @@ const PhotoWithMarkers: React.FC<PhotoWithMarkersProps> = ({
   }
 
   const objectToShow = detectedObject || missingObject;
+  const hasMarkerCoordinates = objectToShow?.markerCoordinates;
 
   return (
     <>
@@ -56,12 +57,12 @@ const PhotoWithMarkers: React.FC<PhotoWithMarkersProps> = ({
           <img src={imageUrl} alt={label} className="w-full h-full object-contain" />
           
           {/* Markers for detected/missing objects */}
-          {objectToShow?.markerCoordinates && (
+          {hasMarkerCoordinates && (
             <div 
               className="absolute pointer-events-none"
               style={{ 
-                left: `${objectToShow.markerCoordinates.x}%`, 
-                top: `${objectToShow.markerCoordinates.y}%`, 
+                left: `${objectToShow.markerCoordinates!.x}%`, 
+                top: `${objectToShow.markerCoordinates!.y}%`, 
                 transform: 'translate(-50%, -100%)' 
               }}
               title={objectToShow.item}
@@ -87,6 +88,15 @@ const PhotoWithMarkers: React.FC<PhotoWithMarkersProps> = ({
                     </span>
                   </>
                 )}
+              </div>
+            </div>
+          )}
+          
+          {/* Info overlay when no coordinates */}
+          {objectToShow && !hasMarkerCoordinates && (
+            <div className="absolute bottom-1 left-1 right-1">
+              <div className="bg-amber-500/90 text-white text-xs px-2 py-1 rounded text-center">
+                💡 Marque objetos durante a vistoria para ver localização
               </div>
             </div>
           )}
