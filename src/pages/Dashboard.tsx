@@ -480,7 +480,7 @@ const Dashboard: React.FC = () => {
               className="w-full flex items-center px-4 py-3 bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-colors"
             >
               <FileText className="w-4 h-4 mr-3" />
-              Relatórios
+              Último Relatórios
             </button>
           </div>
         </motion.div>
