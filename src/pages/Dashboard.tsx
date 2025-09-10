@@ -51,10 +51,19 @@ const Dashboard: React.FC = () => {
     try {
       setLoading(true);
 
-      // Fetch properties
+      // Fetch properties with inspections
       const { data: propertiesData, error: propertiesError } = await supabase
         .from('properties')
-        .select('*')
+        .select(`
+          *,
+          inspections (
+            id,
+            status,
+            inspection_type,
+            general_observations,
+            created_at
+          )
+        `)
         .eq('user_id', user!.id)
         .order('created_at', { ascending: false });
 
@@ -245,40 +254,24 @@ const Dashboard: React.FC = () => {
       }
       
       // Encontrar a última comparação para ação rápida "Relatórios"
-      console.log('🔍 Debug: Procurando propriedades com ambas vistorias...');
-      console.log('🔍 Total de propriedades:', mappedProperties.length);
-      
       const propertiesWithBothInspections = mappedProperties.filter(property => {
         const entryInspection = property.inspections.find(i => i.inspection_type === 'entry' && i.status === 'completed');
         const exitInspection = property.inspections.find(i => i.inspection_type === 'exit' && i.status === 'completed');
-        console.log(`🔍 Propriedade ${property.name}:`, {
-          entry: entryInspection ? `${entryInspection.id} (${entryInspection.status})` : 'Não encontrada',
-          exit: exitInspection ? `${exitInspection.id} (${exitInspection.status})` : 'Não encontrada'
-        });
         return entryInspection && exitInspection;
       });
-      
-      console.log('📊 Propriedades com ambas vistorias:', propertiesWithBothInspections.length);
       
       if (propertiesWithBothInspections.length > 0) {
         const latestPropertyWithBoth = propertiesWithBothInspections[0];
         const entryInspection = latestPropertyWithBoth.inspections.find(i => i.inspection_type === 'entry' && i.status === 'completed');
         const exitInspection = latestPropertyWithBoth.inspections.find(i => i.inspection_type === 'exit' && i.status === 'completed');
         
-        console.log('✅ Última propriedade com ambas vistorias:', latestPropertyWithBoth.name);
-        console.log('✅ Entry ID:', entryInspection?.id);
-        console.log('✅ Exit ID:', exitInspection?.id);
-        
         if (entryInspection && exitInspection) {
-          const reportData = {
+          setLastReportData({
             entryId: entryInspection.id,
             exitId: exitInspection.id
-          };
-          console.log('📊 Definindo lastReportData:', reportData);
-          setLastReportData(reportData);
+          });
         }
       } else {
-        console.log('❌ Nenhuma propriedade com ambas vistorias concluídas');
         setLastReportData(null);
       }
       
@@ -301,14 +294,10 @@ const Dashboard: React.FC = () => {
   };
 
   const handleRelatorios = () => {
-    console.log('🔍 Debug handleRelatorios - lastReportData:', lastReportData);
     if (lastReportData) {
-      const compareUrl = `/compare/${lastReportData.entryId}/${lastReportData.exitId}`;
-      console.log('📊 Navegando para relatório comparativo:', compareUrl);
       // Ir direto para o último relatório comparativo
-      navigate(compareUrl);
+      navigate(`/compare/${lastReportData.entryId}/${lastReportData.exitId}`);
     } else {
-      console.log('❌ Nenhum relatório disponível, indo para /reports');
       // Nenhum relatório disponível, ir para página de relatórios
       navigate('/reports');
     }
