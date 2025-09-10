@@ -83,7 +83,7 @@ const Profile: React.FC = () => {
     };
     
     try {
-      // First try to fetch basic fields that should exist
+      // Use only basic fields that definitely exist to avoid cache issues
       const { data: basicData } = await supabase
         .from('profiles')
         .select('full_name, avatar_url')
@@ -93,17 +93,6 @@ const Profile: React.FC = () => {
       if (basicData) {
         baseProfileInfo.fullName = basicData.full_name || '';
         baseProfileInfo.avatarUrl = basicData.avatar_url || '';
-      }
-
-      // Use raw SQL for extended fields to bypass cache issues
-      const { data: extendedData } = await supabase.rpc('get_profile_extended', {
-        profile_id: user.id
-      });
-
-      if (extendedData && extendedData.length > 0) {
-        const extended = extendedData[0];
-        baseProfileInfo.phone = extended.phone || '';
-        baseProfileInfo.company = extended.company || '';
       }
 
       setProfileData(baseProfileInfo);
@@ -146,14 +135,15 @@ const Profile: React.FC = () => {
         }
       }
 
-      // Update profile using RPC to bypass cache issues
-      const { error: profileError } = await supabase.rpc('update_profile_complete', {
-        profile_id: user!.id,
-        full_name: profileData.fullName,
-        phone_number: profileData.phone,
-        company_name: profileData.company,
-        avatar_url: avatarUrl
-      });
+      // Update only basic profile fields to avoid cache issues
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user!.id,
+          full_name: profileData.fullName,
+          avatar_url: avatarUrl,
+          updated_at: new Date().toISOString()
+        });
 
       if (profileError) throw profileError;
 
