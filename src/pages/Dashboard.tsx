@@ -272,32 +272,10 @@ const Dashboard: React.FC = () => {
   };
 
   // Funções para ações rápidas inteligentes
-  const handleNovaVistoria = () => {
+  const handleUltimaVistoria = () => {
     if (lastProperty) {
-      // Verificar se tem vistoria em andamento ou pode criar uma nova
-      const entryInspection = lastProperty.inspections.find(i => i.inspection_type === 'entry');
-      const exitInspection = lastProperty.inspections.find(i => i.inspection_type === 'exit');
-      
-      if (!entryInspection || entryInspection.status !== 'completed') {
-        // Ir para vistoria de entrada
-        navigate('/inspection', {
-          state: {
-            property: lastProperty,
-            inspectionType: 'entry'
-          }
-        });
-      } else if (!exitInspection || exitInspection.status !== 'completed') {
-        // Ir para vistoria de saída
-        navigate('/inspection', {
-          state: {
-            property: lastProperty,
-            inspectionType: 'exit'
-          }
-        });
-      } else {
-        // Todas concluídas, ir para seleção de propriedade
-        navigate('/properties');
-      }
+      // Ir direto para o gerenciamento de vistorias da última propriedade
+      navigate(`/property/${lastProperty.id}`);
     } else {
       // Nenhuma propriedade, ir para criar uma
       navigate('/properties');
@@ -491,11 +469,11 @@ const Dashboard: React.FC = () => {
               Gerenciar Imóveis
             </Link>
             <button
-              onClick={handleNovaVistoria}
+              onClick={handleUltimaVistoria}
               className="w-full flex items-center px-4 py-3 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-500/20 transition-colors"
             >
               <Camera className="w-4 h-4 mr-3" />
-              Nova Vistoria
+              Última Vistoria
             </button>
             <button
               onClick={handleRelatorios}
