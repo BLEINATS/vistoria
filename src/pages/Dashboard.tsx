@@ -94,7 +94,7 @@ const Dashboard: React.FC = () => {
         if (!monthlyData[monthKey]) {
           monthlyData[monthKey] = { entry: 0, exit: 0 };
         }
-        if (inspection.type === 'entry') {
+        if (inspection.inspection_type === 'entry') {
           monthlyData[monthKey].entry++;
         } else {
           monthlyData[monthKey].exit++;
@@ -156,7 +156,7 @@ const Dashboard: React.FC = () => {
         })),
         ...recentInspections.slice(0, 5).map(i => ({
           type: 'inspection' as const,
-          title: `Vistoria ${i.type === 'entry' ? 'de entrada' : 'de saída'} ${i.status === 'completed' ? 'concluída' : 'iniciada'}`,
+          title: `Vistoria ${i.inspection_type === 'entry' ? 'de entrada' : 'de saída'} ${i.status === 'completed' ? 'concluída' : 'iniciada'}`,
           date: new Date(i.created_at),
           propertyName: i.properties?.name
         }))
@@ -165,10 +165,20 @@ const Dashboard: React.FC = () => {
       // Conta apenas itens faltando da última vistoria
       let criticalIssuesCount = 0;
       
+      // Debug: verificar todas as vistorias
+      console.log('Dashboard Debug - Todas as vistorias:', inspectionsData.map(i => ({ 
+        id: i.id, 
+        inspection_type: i.inspection_type, 
+        status: i.status, 
+        created_at: i.created_at 
+      })));
+      
       // Buscar a última vistoria de SAÍDA concluída (não entrada)
       const latestExitInspection = inspectionsData
-        .filter(i => i.status === 'completed' && i.type === 'exit')
+        .filter(i => i.status === 'completed' && i.inspection_type === 'exit')
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+      
+      console.log('Dashboard Debug - Última vistoria de saída:', latestExitInspection);
       
       if (latestExitInspection) {
         // Buscar fotos apenas dessa vistoria de saída
