@@ -15,6 +15,73 @@ const PropertyDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
 
+  const cleanupDuplicateInspections = async (type: 'entry' | 'exit', duplicates: InspectionSummary[]) => {
+    try {
+      console.log(`🧹 Cleaning up ${duplicates.length} duplicate ${type} inspections...`);
+      
+      // Sort by: 1) Most photos, 2) Most recent, 3) Completed status
+      const sorted = duplicates.sort((a, b) => {
+        // Prioritize by photo count (descending)
+        const aPhotoCount = a.photoCount || 0;
+        const bPhotoCount = b.photoCount || 0;
+        if (aPhotoCount !== bPhotoCount) {
+          return bPhotoCount - aPhotoCount;
+        }
+        // Then by status (completed > in-progress > draft)
+        const statusPriority = { 'completed': 3, 'in-progress': 2, 'draft': 1 };
+        const aPriority = statusPriority[a.status as keyof typeof statusPriority] || 0;
+        const bPriority = statusPriority[b.status as keyof typeof statusPriority] || 0;
+        if (aPriority !== bPriority) {
+          return bPriority - aPriority;
+        }
+        // Finally by created date (most recent) - use id as proxy for creation time since date field doesn't exist
+        return b.id.localeCompare(a.id);
+      });
+      
+      const keepInspection = sorted[0]; // Keep the best one
+      const toDelete = sorted.slice(1); // Delete the rest
+      
+      console.log(`✅ Keeping inspection ${keepInspection.id} (${keepInspection.photoCount} photos, ${keepInspection.status})`);
+      console.log(`🗑️ Deleting ${toDelete.length} duplicate inspections...`);
+      
+      // Delete photos from duplicate inspections first
+      for (const inspection of toDelete) {
+        console.log(`🗑️ Deleting photos for inspection ${inspection.id}...`);
+        const { error: photosError } = await supabase
+          .from('photos')
+          .delete()
+          .eq('inspection_id', inspection.id);
+          
+        if (photosError) {
+          console.error('❌ Error deleting photos:', photosError);
+        } else {
+          console.log(`✅ Photos deleted for inspection ${inspection.id}`);
+        }
+      }
+      
+      // Delete the duplicate inspections
+      const idsToDelete = toDelete.map(i => i.id);
+      const { error: inspectionError } = await supabase
+        .from('inspections')
+        .delete()
+        .in('id', idsToDelete);
+        
+      if (inspectionError) {
+        console.error('❌ Error deleting duplicate inspections:', inspectionError);
+      } else {
+        console.log(`✅ Successfully deleted ${idsToDelete.length} duplicate inspections`);
+        
+        // Refresh the property data
+        setTimeout(() => {
+          fetchProperty(false);
+        }, 1000);
+      }
+      
+    } catch (error) {
+      console.error('💥 Error cleaning up duplicates:', error);
+    }
+  };
+
   const fetchProperty = useCallback(async (showLoading = true) => {
     if (!id) {
       setLoading(false);
@@ -42,8 +109,34 @@ const PropertyDetail: React.FC = () => {
       
       // Log inspection statuses for debugging
       mapped.inspections?.forEach(insp => {
-        console.log(`📋 Inspection ${insp.inspection_type}: ${insp.status} (${insp.photoCount} photos)`);
+        console.log(`📋 Inspection ${insp.inspection_type}: ${insp.status} (${insp.photoCount} photos) - ID: ${insp.id}`);
       });
+      
+      // Check for duplicate inspections
+      if (mapped.inspections) {
+        const entryInspections = mapped.inspections.filter(i => i.inspection_type === 'entry');
+        const exitInspections = mapped.inspections.filter(i => i.inspection_type === 'exit');
+        
+        if (entryInspections.length > 1) {
+          console.warn('⚠️ DUPLICATE ENTRY INSPECTIONS DETECTED:', entryInspections.length);
+          entryInspections.forEach((inspection, index) => {
+            console.warn(`  Entry ${index + 1}: ID ${inspection.id}, Status: ${inspection.status}, Photos: ${inspection.photoCount}`);
+          });
+          
+          // Automatically clean up duplicates
+          cleanupDuplicateInspections('entry', entryInspections);
+        }
+        
+        if (exitInspections.length > 1) {
+          console.warn('⚠️ DUPLICATE EXIT INSPECTIONS DETECTED:', exitInspections.length);
+          exitInspections.forEach((inspection, index) => {
+            console.warn(`  Exit ${index + 1}: ID ${inspection.id}, Status: ${inspection.status}, Photos: ${inspection.photoCount}`);
+          });
+          
+          // Automatically clean up duplicates
+          cleanupDuplicateInspections('exit', exitInspections);
+        }
+      }
       
     } catch (error) {
       console.error("Failed to fetch property:", error);
