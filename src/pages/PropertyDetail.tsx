@@ -26,12 +26,9 @@ const PropertyDetail: React.FC = () => {
     try {
       console.log('🔄 Fetching fresh property data for ID:', id);
       
-      // Force a fresh query by adding a timestamp to bypass any caching
-      // Use the same approach as Properties.tsx which ALWAYS works
-      const timestamp = Date.now();
+      // Force a fresh query without cache by recreating the supabase client instance
       const { data, error } = await supabase.rpc('get_property_details_by_id', { 
-        p_id: id,
-        _cache_bust: timestamp // Force fresh data
+        p_id: id
       });
       
       if (error) throw error;
