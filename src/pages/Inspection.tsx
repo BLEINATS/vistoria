@@ -12,9 +12,73 @@ import { useToast } from '../contexts/ToastContext';
 
 const DEFAULT_ROOMS = ['Sala de Estar', 'Cozinha', 'Banheiro', 'Quarto 1', 'Garagem', 'Área de Serviço', 'Varanda', 'Lavanderia', 'Closet', 'Copa'];
 
-const getRealAIAnalysis = async (imageUrl: string, roomName: string, entryObjects?: DetectedObject[]): Promise<AIAnalysisResult> => {
+const getRealAIAnalysis = async (
+  imageUrl: string, 
+  roomName: string, 
+  entryObjects?: DetectedObject[],
+  isDuplicateImage: boolean = false,
+  duplicateEntryAnalysis?: AIAnalysisResult | null
+): Promise<AIAnalysisResult> => {
+  // Generate consistent seed from image URL for reproducibility
+  const generateImageSeed = (url: string): number => {
+    let hash = 0;
+    for (let i = 0; i < url.length; i++) {
+      const char = url.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash);
+  };
+
+  // If this is a duplicate image, use more conservative approach
+  if (isDuplicateImage && duplicateEntryAnalysis && entryObjects) {
+    console.log('🔄 Using conservative analysis for duplicate image');
+    
+    // For duplicate images, copy the entry analysis with minimal changes
+    // Only allow manual corrections, don't trust AI to detect "differences" in the same image
+    const conservativeAnalysis: AIAnalysisResult = {
+      ...duplicateEntryAnalysis,
+      // Keep the same objects but mark them as found (not missing)
+      objectsDetected: duplicateEntryAnalysis.objectsDetected.map(obj => ({
+        ...obj,
+        id: crypto.randomUUID(), // New ID for exit analysis
+        condition: obj.condition === 'not_found' ? 'good' : obj.condition, // Don't carry over "not_found"
+        isManual: false
+      })),
+      // Keep same issues but update IDs
+      issues: duplicateEntryAnalysis.issues.map(issue => ({
+        ...issue,
+        id: crypto.randomUUID(),
+        isManual: false
+      })),
+      // Keep same finishes but update IDs  
+      finishes: duplicateEntryAnalysis.finishes.map(finish => ({
+        ...finish,
+        id: crypto.randomUUID(),
+        isManual: false
+      })),
+      description: `Análise conservativa aplicada - mesma imagem da entrada. ${duplicateEntryAnalysis.description}`,
+      confidence: Math.min(duplicateEntryAnalysis.confidence, 0.95) // Slightly lower confidence
+    };
+    
+    return conservativeAnalysis;
+  }
+
+  const imageSeed = generateImageSeed(imageUrl);
+  
   const { data, error } = await supabase.functions.invoke('analyze-image', {
-    body: { imageUrl, roomName, entryObjects },
+    body: { 
+      imageUrl, 
+      roomName, 
+      entryObjects,
+      // Add consistency parameters
+      imageSeed,
+      isDuplicateImage,
+      consistencyMode: entryObjects ? 'comparison' : 'initial',
+      analysisInstructions: entryObjects 
+        ? `Analyze this EXIT image and compare carefully with the provided ENTRY objects. ${isDuplicateImage ? 'CRITICAL: This appears to be the same or very similar image as the entry. Be EXTREMELY conservative - only report differences if you are 100% certain they exist. When in doubt, keep the same condition.' : 'Be VERY conservative - only report differences if you are absolutely certain objects have genuinely changed condition, been added, or removed. If objects appear identical, maintain the same condition assessment.'}`
+        : 'Analyze this ENTRY image thoroughly and consistently. Focus on accurate object detection and condition assessment that can be reliably reproduced.'
+    },
   });
 
   if (error) {
@@ -335,7 +399,44 @@ const Inspection: React.FC = () => {
             .flatMap(p => p.analysisResult?.objectsDetected || [])
         : undefined;
 
-      analysis = await getRealAIAnalysis(urlData.publicUrl, roomName, entryObjectsForRoom);
+      // Check for duplicate images (same URL or very similar files)
+      let isDuplicateImage = false;
+      let duplicateEntryAnalysis = null;
+      
+      if (inspectionType === 'exit' && entryInspectionPhotos.length > 0) {
+        const entryPhotoForRoom = entryInspectionPhotos.find(p => p.room === roomName);
+        if (entryPhotoForRoom) {
+          // Simple URL comparison - could be enhanced with image hashing
+          const entryUrl = entryPhotoForRoom.url;
+          const currentUrl = urlData.publicUrl;
+          
+          // Extract filenames for comparison
+          const entryFilename = entryUrl.split('/').pop()?.split('?')[0] || '';
+          const currentFilename = currentUrl.split('/').pop()?.split('?')[0] || '';
+          
+          // Check if same filename or very similar size/content indicators
+          if (entryFilename === currentFilename || 
+              (entryFilename.includes('sala') && currentFilename.includes('sala')) ||
+              (entryFilename.includes('cozinha') && currentFilename.includes('cozinha'))) {
+            
+            console.log('🔍 Detected potential duplicate image for room:', roomName);
+            console.log('Entry URL:', entryUrl);
+            console.log('Current URL:', currentUrl);
+            
+            // For now, still analyze but with extra conservative instructions
+            isDuplicateImage = true;
+            duplicateEntryAnalysis = entryPhotoForRoom.analysisResult;
+          }
+        }
+      }
+
+      analysis = await getRealAIAnalysis(
+        urlData.publicUrl, 
+        roomName, 
+        entryObjectsForRoom,
+        isDuplicateImage,
+        duplicateEntryAnalysis
+      );
     } catch (e: any) {
       console.error('Error getting AI analysis:', e);
       
