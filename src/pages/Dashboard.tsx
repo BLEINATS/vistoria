@@ -162,17 +162,28 @@ const Dashboard: React.FC = () => {
         }))
       ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 6);
 
-      // Conta apenas itens faltando na saída (condition: "not_found")
+      // Conta apenas itens faltando da última vistoria
       let criticalIssuesCount = 0;
-      photosData.forEach(photo => {
-        if (photo.analysis_result?.objectsDetected) {
-          photo.analysis_result.objectsDetected.forEach((obj: any) => {
-            if (obj.condition === 'not_found') {
-              criticalIssuesCount++;
-            }
-          });
-        }
-      });
+      
+      // Buscar a última vistoria (mais recente)
+      const latestInspection = inspectionsData
+        .filter(i => i.status === 'completed')
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+      
+      if (latestInspection) {
+        // Buscar fotos apenas dessa vistoria
+        const latestInspectionPhotos = photosData.filter(photo => photo.inspection_id === latestInspection.id);
+        
+        latestInspectionPhotos.forEach(photo => {
+          if (photo.analysis_result?.objectsDetected) {
+            photo.analysis_result.objectsDetected.forEach((obj: any) => {
+              if (obj.condition === 'not_found') {
+                criticalIssuesCount++;
+              }
+            });
+          }
+        });
+      }
 
       const dashboardStats: DashboardStats = {
         totalProperties: mappedProperties.length,
