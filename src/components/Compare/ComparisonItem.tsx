@@ -56,41 +56,7 @@ const PhotoWithMarkers: React.FC<PhotoWithMarkersProps> = ({
         >
           <img src={imageUrl} alt={label} className="w-full h-full object-contain" />
           
-          {/* Markers for detected/missing objects */}
-          {hasMarkerCoordinates && (
-            <div 
-              className="absolute pointer-events-none"
-              style={{ 
-                left: `${objectToShow.markerCoordinates!.x}%`, 
-                top: `${objectToShow.markerCoordinates!.y}%`, 
-                transform: 'translate(-50%, -100%)' 
-              }}
-              title={objectToShow.item}
-            >
-              <div className="relative">
-                {showMissingMarker ? (
-                  // Red marker with X for missing objects
-                  <>
-                    <div className="relative">
-                      <MapPin className="w-6 h-6 text-red-600 drop-shadow-lg" fill="currentColor" />
-                      <XCircle className="w-3 h-3 text-white absolute top-0.5 left-1/2 -translate-x-1/2" />
-                    </div>
-                    <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
-                      Faltando: {objectToShow.item}
-                    </span>
-                  </>
-                ) : (
-                  // Green marker for present objects
-                  <>
-                    <MapPin className="w-6 h-6 text-green-600 drop-shadow-lg" fill="currentColor" />
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
-                      {objectToShow.item}
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
+          {/* Marcadores visuais removidos para melhor experiência */}
           
           
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
