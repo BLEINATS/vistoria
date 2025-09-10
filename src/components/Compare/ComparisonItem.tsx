@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { DetectedObject } from '../../types';
 import { translateObjectCondition, formatObjectDescription } from '../../utils/translations';
-import { ArrowRight, ZoomIn, MapPin, XCircle } from 'lucide-react';
+import { ArrowRight, ZoomIn } from 'lucide-react';
 import { getConditionStyle } from '../../utils/styleUtils';
 import ImageLightbox from '../common/ImageLightbox';
 
@@ -22,15 +22,13 @@ interface PhotoWithMarkersProps {
   imageUrl?: string;
   detectedObject?: DetectedObject;
   missingObject?: DetectedObject; // Object that should be here but is missing
-  showMissingMarker?: boolean;
 }
 
 const PhotoWithMarkers: React.FC<PhotoWithMarkersProps> = ({ 
   label, 
   imageUrl, 
   detectedObject, 
-  missingObject, 
-  showMissingMarker = false 
+  missingObject 
 }) => {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
@@ -38,25 +36,24 @@ const PhotoWithMarkers: React.FC<PhotoWithMarkersProps> = ({
     return (
       <div>
         <p className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">{label}</p>
-        <div className="w-full h-24 bg-gray-100 dark:bg-slate-700 rounded-md flex items-center justify-center text-xs text-gray-400">
+        <div className="w-full h-24 bg-gray-100 dark:bg-slate-700 rounded-md flex items-center justify-center text-xs text-gray-400 report-image-container">
           Sem foto
         </div>
       </div>
     );
   }
 
-  const objectToShow = detectedObject || missingObject;
-  const hasMarkerCoordinates = objectToShow?.markerCoordinates;
+  // Remove unused variables
 
   return (
     <>
       <div>
         <p className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">{label}</p>
         <div 
-          className="w-full h-24 bg-gray-100 dark:bg-slate-700 rounded-md relative cursor-pointer group overflow-hidden"
+          className="w-full h-24 bg-gray-100 dark:bg-slate-700 rounded-md relative cursor-pointer group overflow-hidden report-image-container"
           onClick={() => setIsLightboxOpen(true)}
         >
-          <img src={imageUrl} alt={label} className="w-full h-full object-contain" />
+          <img src={imageUrl} alt={label} className="w-full h-full object-contain report-image" />
           
           {/* Marcadores visuais removidos conforme solicitado */}
           
@@ -142,7 +139,6 @@ const ComparisonItem: React.FC<ComparisonItemProps> = ({ item, type }) => {
               label="Saída" 
               imageUrl={item.exitPhotoUrl} // Use exit photo to show where object is missing
               missingObject={item.entry}
-              showMissingMarker={true}
             />
           </>
         ) : type === 'new' ? (

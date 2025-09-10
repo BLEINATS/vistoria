@@ -3,7 +3,45 @@
 @tailwind utilities;
 
 /* --- PRINT AND PDF STYLES --- */
-.pdf-render-mode,
+/* PDF Generation Styles - applied during PDF capture */
+.pdf-render-mode .report-image-container,
+.pdf-render-mode .h-24 {
+  height: auto !important;
+  max-height: 400px !important;
+  min-height: 300px !important;
+}
+
+.pdf-render-mode .report-image-container {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: #f9fafb !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.5rem !important;
+  margin: 1rem 0 !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.pdf-render-mode .report-image {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+/* Grid layout for comparison photos in PDF */
+.pdf-render-mode .grid.grid-cols-1.md\:grid-cols-2 {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 1rem !important;
+  margin-top: 1rem !important;
+}
+
+/* Standard print styles continue below */
 @media print {
   .no-print {
     display: none !important;
@@ -48,25 +86,26 @@
     padding: 1rem;
   }
   
-  .report-image-container {
-    height: auto !important;
-    max-height: 250px !important; /* Reduced max-height to prevent clipping */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #f9fafb !important;
-    border: 1px solid #e5e7eb !important;
-    border-radius: 0.5rem;
-    margin-bottom: 1rem;
-    overflow: hidden;
+  /* Print-specific image styles already defined above */
+
+  /* Grid layout for comparison photos in PDF */
+  .grid.grid-cols-1.md\\:grid-cols-2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 1rem !important;
+    margin-top: 1rem !important;
   }
 
-  .report-image {
-    max-width: 100%;
-    max-height: 100%;
-    width: auto !important;
-    height: auto !important;
-    object-fit: contain !important; /* CRITICAL: Respects aspect ratio */
+  /* Ensure photo labels are visible */
+  .report-image-container .text-sm {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    padding: 0.25rem 0.5rem !important;
+    border-radius: 0.25rem !important;
+    position: absolute !important;
+    top: 0.5rem !important;
+    left: 0.5rem !important;
+    font-weight: 600 !important;
+    color: #000000 !important;
   }
 
   /* Prevent page breaks inside these critical elements */
