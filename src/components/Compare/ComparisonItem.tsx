@@ -92,14 +92,6 @@ const PhotoWithMarkers: React.FC<PhotoWithMarkersProps> = ({
             </div>
           )}
           
-          {/* Info overlay when no coordinates */}
-          {objectToShow && !hasMarkerCoordinates && (
-            <div className="absolute bottom-1 left-1 right-1">
-              <div className="bg-amber-500/90 text-white text-xs px-2 py-1 rounded text-center">
-                💡 Marque objetos durante a vistoria para ver localização
-              </div>
-            </div>
-          )}
           
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
             <ZoomIn className="w-6 h-6 text-white" />
