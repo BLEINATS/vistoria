@@ -71,8 +71,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        console.log('AuthContext: Evento de autenticação:', event, 'User:', newSession?.user?.email || 'null');
-        
         // Only process SIGNED_IN, SIGNED_OUT, and TOKEN_REFRESHED events
         if (!['SIGNED_IN', 'SIGNED_OUT', 'TOKEN_REFRESHED'].includes(event)) {
           return;
@@ -81,13 +79,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const currentUser = newSession?.user ?? null;
         const currentUserId = user?.id;
         
-        // Skip if user is the same (prevents loops)
-        if (currentUser?.id === currentUserId && event !== 'TOKEN_REFRESHED') {
-          console.log('AuthContext: Pulando evento (mesmo usuário)');
+        // Skip if user is the same (prevents loops), but always process SIGNED_OUT
+        if (currentUser?.id === currentUserId && event !== 'TOKEN_REFRESHED' && event !== 'SIGNED_OUT') {
           return;
         }
         
-        console.log('AuthContext: Atualizando estado do usuário:', currentUser?.email || 'null');
         setSession(newSession);
         setUser(currentUser);
         
