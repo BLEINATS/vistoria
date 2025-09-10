@@ -23,23 +23,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (userId: string) => {
+    console.log('🔍 fetchProfile: Iniciando busca do perfil para userId:', userId);
     try {
-      const { data, error } = await supabase
+      // Add a timeout to prevent infinite hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 5000);
+      });
+      
+      const fetchPromise = supabase
         .from('profiles')
         .select('full_name, avatar_url')
         .eq('id', userId)
         .single();
       
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+      
+      console.log('📊 fetchProfile: Resultado da busca:', { data, error });
+      
       if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
-        console.error('Error fetching profile:', error);
+        console.warn('⚠️ fetchProfile: Erro na busca, usando perfil vazio:', error);
         setProfile(null);
       } else {
+        console.log('✅ fetchProfile: Perfil encontrado:', data);
         setProfile(data ?? null);
       }
     } catch (e) {
-      console.error("Unexpected error while fetching profile:", e);
+      console.warn("⚠️ fetchProfile: Erro inesperado, continuando sem perfil:", e);
       setProfile(null);
     }
+    console.log('🏁 fetchProfile: Finalizando busca do perfil');
   }, []);
 
   useEffect(() => {
