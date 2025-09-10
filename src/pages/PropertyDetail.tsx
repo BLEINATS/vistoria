@@ -45,18 +45,53 @@ const PropertyDetail: React.FC = () => {
   }, [id, profile?.full_name]); // Only depend on id and full_name, not the entire profile object
 
   useEffect(() => {
+    console.log('🏠 PropertyDetail mounted, fetching property data...');
     fetchProperty();
   }, [fetchProperty]);
+
+  // Force refresh when component receives focus or is navigated to
+  useEffect(() => {
+    const refreshOnNavigation = () => {
+      console.log('🔄 Route change detected, refreshing property data...');
+      setTimeout(() => fetchProperty(false), 100); // Small delay to ensure proper mounting
+    };
+
+    // Listen for route changes 
+    refreshOnNavigation();
+  }, [id, fetchProperty]); // Trigger when property ID changes
 
   // Add window focus listener to refresh data when user returns to the page
   useEffect(() => {
     const handleFocus = () => {
-      console.log('Window focused, refreshing property data...');
+      console.log('🔄 Window focused, refreshing property data...');
       fetchProperty(false); // Refresh without showing loading spinner
     };
 
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('🔄 Page became visible, refreshing property data...');
+        fetchProperty(false);
+      }
+    };
+
     window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [fetchProperty]);
+
+  // Add navigation listener to refresh when coming from inspection page
+  useEffect(() => {
+    const handlePopstate = () => {
+      console.log('🔄 Navigation detected, refreshing property data...');
+      fetchProperty(false);
+    };
+
+    window.addEventListener('popstate', handlePopstate);
+    return () => window.removeEventListener('popstate', handlePopstate);
   }, [fetchProperty]);
 
   const handleRefresh = async () => {
