@@ -236,13 +236,20 @@ const CompareInspections: React.FC = () => {
       .filter(p => p.room === room)
       .flatMap(p => (p.analysisResult.objectsDetected || []).map(obj => ({ ...obj, photoUrl: p.url })));
 
+
     const pairedItems: { entry: DetectedObject, exit: DetectedObject }[] = [];
     const newItems: DetectedObject[] = [];
     const missingItems: DetectedObject[] = [...entryObjects];
 
     exitObjects.forEach(exitObj => {
+      // Se o item tem condição "not_found", não fazer pareamento - ele será considerado faltando
+      if (exitObj.condition === 'not_found') {
+        return; // Não remove do missingItems, permanece como faltando
+      }
+
+      // Comparação mais flexível para evitar problemas com espaços/case
       const bestMatchIndex = missingItems.findIndex(entryObj => 
-        entryObj.item === exitObj.item
+        entryObj.item.toLowerCase().trim() === exitObj.item.toLowerCase().trim()
       );
 
       if (bestMatchIndex > -1) {
@@ -255,6 +262,7 @@ const CompareInspections: React.FC = () => {
 
     const changedItems = pairedItems.filter(p => p.entry.condition !== p.exit.condition);
     const unchangedItems = pairedItems.filter(p => p.entry.condition === p.exit.condition);
+
 
     return { changedItems, unchangedItems, newItems, missingItems };
   };

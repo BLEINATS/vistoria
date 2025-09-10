@@ -39,6 +39,7 @@ A React/TypeScript application for property inspections with Supabase backend in
   - Implemented robust data loading that always shows user email and name when available
   - **Fixed RLS policy issues**: Resolved Row Level Security and schema cache errors by simplifying database operations
   - **Fixed profile fields mismatch**: Corrected code to use only existing table fields (full_name, avatar_url) instead of non-existent fields (phone, company)
+  - **Fixed comparison summary logic**: Corrected bug where items with condition "not_found" were incorrectly paired instead of being counted as missing items
 
 ## Previous Changes (2025-09-09)
 - Configured Vite server for Replit environment (host: 0.0.0.0, port: 5000)
