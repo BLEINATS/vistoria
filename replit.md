@@ -63,6 +63,12 @@ A React/TypeScript application for property inspections with Supabase backend in
     - **Enhanced prompts**: Added specific instructions for consistent AI analysis with conservative comparison mode
     - **Image seed generation**: Implemented deterministic seed based on image URL for reproducible results
     - **Intelligent fallbacks**: System prioritizes consistency over fresh analysis when images are identical
+  - **🎯 ENHANCED OBJECT DETECTION ACCURACY**: Dramatically improved AI object detection for property inspections
+    - **Room-specific object lists**: Added detailed lists of priority objects for each environment type (living room, kitchen, bathroom, bedroom, etc.)
+    - **Assertive detection instructions**: Enhanced prompts to focus on 70% inspection core: "what's there and what's missing"
+    - **Inventory-focused analysis**: Prioritized tangible, countable objects over construction finishes
+    - **Detailed object specifications**: Enhanced detection to include material, color, and condition details
+    - **Priority hierarchies**: Structured object detection by importance (furniture > appliances > accessories > installations)
 
 ## Previous Changes (2025-09-09)
 - Configured Vite server for Replit environment (host: 0.0.0.0, port: 5000)
