@@ -83,37 +83,31 @@ const Profile: React.FC = () => {
     };
     
     try {
-      // Try to fetch basic profile info first
+      // Fetch all profile data at once since columns exist
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, avatar_url')
+        .select('full_name, phone, company, avatar_url')
         .eq('id', user.id)
         .single();
 
-      if (data) {
-        baseProfileInfo.fullName = data.full_name || '';
-        baseProfileInfo.avatarUrl = data.avatar_url || '';
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.error('Error fetching profile:', error);
+        // Even if profile fetch fails, show user email
+        setProfileData(baseProfileInfo);
+        return;
       }
 
-      // Try to fetch extended fields if they exist
-      try {
-        const { data: extendedData } = await supabase
-          .from('profiles')
-          .select('phone, company')
-          .eq('id', user.id)
-          .single();
-        
-        if (extendedData) {
-          baseProfileInfo.phone = extendedData.phone || '';
-          baseProfileInfo.company = extendedData.company || '';
-        }
-      } catch (extendedError) {
-        // Extended fields don't exist yet, that's ok
-        console.log('Extended profile fields not available yet');
-      }
+      // Update with fetched data or keep defaults
+      const profileInfo = {
+        fullName: data?.full_name || '',
+        email: user.email || '',
+        phone: data?.phone || '',
+        company: data?.company || '',
+        avatarUrl: data?.avatar_url || ''
+      };
 
-      setProfileData(baseProfileInfo);
-      setAvatarPreview(baseProfileInfo.avatarUrl);
+      setProfileData(profileInfo);
+      setAvatarPreview(profileInfo.avatarUrl);
 
     } catch (error) {
       console.error('Error fetching profile data:', error);
