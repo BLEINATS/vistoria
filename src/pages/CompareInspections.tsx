@@ -38,7 +38,7 @@ const CompareInspections: React.FC = () => {
   });
 
   const reportRef = useRef<HTMLDivElement>(null);
-  const { handlePrint, handleShare, handleDownloadPdf } = useReportActions(reportRef);
+  const { handlePrint, handleShare, handleDownloadPdf } = useReportActions(reportRef as any);
 
   const fetchInspectionData = useCallback(async (inspectionId: string): Promise<FullInspectionData | null> => {
     if (!user) return null;
@@ -75,7 +75,7 @@ const CompareInspections: React.FC = () => {
     }
 
     return {
-      property: mapToProperty(inspectionData.properties as any, profileData?.full_name),
+      property: mapToProperty(inspectionData.properties as any, profileData?.full_name) as Property,
       photos: photosData.map(p => ({
         id: p.id,
         url: p.photo_url,
@@ -163,7 +163,7 @@ const CompareInspections: React.FC = () => {
             ...prev.rooms,
             [section]: {
               ...prev.rooms[section],
-              [subsection]: !prev.rooms[section]?.[subsection]
+              [subsection]: !prev.rooms[section]?.[subsection as keyof typeof prev.rooms[string]]
             }
           }
         };
