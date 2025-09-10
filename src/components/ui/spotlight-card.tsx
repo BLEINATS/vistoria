@@ -37,7 +37,17 @@ const GlowCard: React.FC<GlowCardProps> = ({
   const innerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Verificar se é dispositivo móvel
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+    
     const syncPointer = (e: PointerEvent) => {
+      // No mobile, só atualizar o efeito durante hover/touch na área do card
+      if (isMobile && e.pointerType === 'touch') {
+        if (!cardRef.current?.contains(e.target as Node)) {
+          return; // Ignorar se não está tocando o card
+        }
+      }
+      
       const { clientX: x, clientY: y } = e;
       
       if (cardRef.current) {
@@ -48,8 +58,29 @@ const GlowCard: React.FC<GlowCardProps> = ({
       }
     };
 
-    document.addEventListener('pointermove', syncPointer);
-    return () => document.removeEventListener('pointermove', syncPointer);
+    // No mobile, usar eventos mais específicos para não interferir com rolagem
+    if (isMobile) {
+      // Apenas quando tocar diretamente no card
+      const handleTouch = (e: TouchEvent) => {
+        const touch = e.touches[0];
+        if (touch && cardRef.current?.contains(e.target as Node)) {
+          const pointerEvent = {
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+            pointerType: 'touch',
+            target: e.target
+          } as PointerEvent;
+          syncPointer(pointerEvent);
+        }
+      };
+      
+      cardRef.current?.addEventListener('touchmove', handleTouch, { passive: true });
+      return () => cardRef.current?.removeEventListener('touchmove', handleTouch);
+    } else {
+      // Desktop: usar pointermove global
+      document.addEventListener('pointermove', syncPointer);
+      return () => document.removeEventListener('pointermove', syncPointer);
+    }
   }, []);
 
   const { base, spread } = glowColorMap[glowColor];
@@ -87,7 +118,7 @@ const GlowCard: React.FC<GlowCardProps> = ({
       backgroundAttachment: 'fixed',
       border: 'var(--border-size) solid var(--backup-border)',
       position: 'relative',
-      touchAction: 'none',
+      touchAction: 'pan-y pan-x', // Permite rolagem no mobile
     };
 
     // Add width and height if provided
