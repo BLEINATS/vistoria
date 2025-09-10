@@ -25,8 +25,11 @@ const Header: React.FC = () => {
         if (data) {
           setUserName(data.full_name);
         } else if (error) {
-          console.error("Error fetching user profile:", error);
+          console.log("Info: No profile found for user");
         }
+      } else {
+        // Reset user name when no user is logged in
+        setUserName(null);
       }
     };
     fetchProfile();
