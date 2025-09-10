@@ -547,6 +547,25 @@ const Inspection: React.FC = () => {
       
       console.log('✅ Inspection status updated to completed:', data);
       
+      // Double-check: verify the update worked
+      console.log('🔍 Verifying update by fetching inspection again...');
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('inspections')
+        .select('status')
+        .eq('id', inspectionId)
+        .single();
+        
+      if (verifyError) {
+        console.error('❌ Error verifying update:', verifyError);
+      } else {
+        console.log('✅ Verification - Current status in DB:', verifyData.status);
+        if (verifyData.status !== 'completed') {
+          console.error('⚠️ WARNING: Status in DB is not completed!', verifyData.status);
+          addToast('Erro: Status não foi salvo corretamente', 'error');
+          return;
+        }
+      }
+      
       // Update local status to reflect the change
       setInspectionStatus('completed');
       console.log('🔄 Local status updated to completed');
