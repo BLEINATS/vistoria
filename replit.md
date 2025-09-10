@@ -42,7 +42,9 @@ A React/TypeScript application for property inspections with Supabase backend in
   - **Fixed comparison summary logic**: Corrected bug where items with condition "not_found" were incorrectly paired instead of being counted as missing items
   - **Fixed Dashboard critical issues calculation**: Enhanced logic to properly detect critical issues from not_found and damaged items
   - **Removed Dashboard charts**: Removed inspection trends and issues distribution charts as requested
-  - **Changed dashboard card**: Changed "Problemas Críticos" to "Itens Faltando na Saída" and updated logic to count only items with condition "not_found"
+  - **Changed dashboard card**: Changed "Problemas Críticos" to "Itens Faltando da Última Vistoria" and updated logic to count only items with condition "not_found" from the most recent completed inspection
+  - **Fixed dashboard data accuracy**: Modified logic to fetch data specifically from the latest inspection instead of all inspections
+  - **Verified action links functionality**: Confirmed that "Nova Vistoria" and "Relatórios" quick action links are working correctly
 
 ## Previous Changes (2025-09-09)
 - Configured Vite server for Replit environment (host: 0.0.0.0, port: 5000)

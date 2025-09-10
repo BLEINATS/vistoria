@@ -174,27 +174,16 @@ const Dashboard: React.FC = () => {
         // Buscar fotos apenas dessa vistoria
         const latestInspectionPhotos = photosData.filter(photo => photo.inspection_id === latestInspection.id);
         
-        console.log('DEBUG - Última vistoria:', {
-          inspectionId: latestInspection.id,
-          inspectionType: latestInspection.type,
-          inspectionDate: latestInspection.created_at,
-          totalPhotos: latestInspectionPhotos.length
-        });
-        
         latestInspectionPhotos.forEach(photo => {
           if (photo.analysis_result?.objectsDetected) {
-            console.log(`DEBUG - Foto ${photo.id}:`, photo.analysis_result.objectsDetected);
             photo.analysis_result.objectsDetected.forEach((obj: any) => {
               if (obj.condition === 'not_found') {
                 criticalIssuesCount++;
-                console.log('DEBUG - Item faltando encontrado:', obj);
               }
             });
           }
         });
       }
-      
-      console.log('DEBUG - Total itens faltando:', criticalIssuesCount);
 
       const dashboardStats: DashboardStats = {
         totalProperties: mappedProperties.length,
