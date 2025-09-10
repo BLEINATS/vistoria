@@ -18,8 +18,6 @@ import { motion } from 'framer-motion';
 interface ProfileData {
   fullName: string;
   email: string;
-  phone: string;
-  company: string;
 }
 
 interface PasswordData {
@@ -35,9 +33,7 @@ const Profile: React.FC = () => {
   
   const [profileData, setProfileData] = useState<ProfileData>({
     fullName: '',
-    email: '',
-    phone: '',
-    company: ''
+    email: ''
   });
   
   const [passwordData, setPasswordData] = useState<PasswordData>({
@@ -68,7 +64,7 @@ const Profile: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, phone, company')
+        .select('full_name')
         .eq('id', user.id)
         .single();
 
@@ -79,9 +75,7 @@ const Profile: React.FC = () => {
 
       setProfileData({
         fullName: data?.full_name || '',
-        email: user.email || '',
-        phone: data?.phone || '',
-        company: data?.company || ''
+        email: user.email || ''
       });
     } catch (error) {
       console.error('Error fetching profile data:', error);
@@ -100,8 +94,6 @@ const Profile: React.FC = () => {
         .upsert({
           id: user!.id,
           full_name: profileData.fullName,
-          phone: profileData.phone,
-          company: profileData.company,
           updated_at: new Date().toISOString()
         });
 
@@ -134,6 +126,12 @@ const Profile: React.FC = () => {
       return;
     }
 
+    if (passwordData.newPassword === passwordData.currentPassword) {
+      setMessage({ type: 'error', text: 'A nova senha deve ser diferente da senha atual' });
+      setLoading(false);
+      return;
+    }
+
     try {
       const { error } = await supabase.auth.updateUser({
         password: passwordData.newPassword
@@ -149,7 +147,15 @@ const Profile: React.FC = () => {
       });
     } catch (error: any) {
       console.error('Error updating password:', error);
-      setMessage({ type: 'error', text: error.message || 'Erro ao alterar senha' });
+      
+      let errorMessage = 'Erro ao alterar senha';
+      if (error.code === 'same_password') {
+        errorMessage = 'A nova senha deve ser diferente da senha atual';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setMessage({ type: 'error', text: errorMessage });
     } finally {
       setLoading(false);
     }
@@ -269,31 +275,12 @@ const Profile: React.FC = () => {
                   O email não pode ser alterado
                 </p>
               </div>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Telefone
-                </label>
-                <input
-                  type="tel"
-                  value={profileData.phone}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="(11) 99999-9999"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Empresa
-                </label>
-                <input
-                  type="text"
-                  value={profileData.company}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, company: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nome da empresa"
-                />
+            <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-lg p-4">
+              <div className="text-sm text-blue-700 dark:text-blue-400">
+                <p className="font-medium">💡 Campos adicionais</p>
+                <p className="mt-1">Telefone e empresa podem ser adicionados em futuras atualizações do sistema.</p>
               </div>
             </div>
 
