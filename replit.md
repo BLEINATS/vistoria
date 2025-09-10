@@ -45,6 +45,7 @@ A React/TypeScript application for property inspections with Supabase backend in
   - **Changed dashboard card**: Changed "Problemas Críticos" to "Itens Faltando da Última Vistoria" and updated logic to count only items with condition "not_found" from the most recent completed inspection
   - **Fixed dashboard data accuracy**: Modified logic to fetch data specifically from the latest inspection instead of all inspections
   - **Verified action links functionality**: Confirmed that "Nova Vistoria" and "Relatórios" quick action links are working correctly
+  - **Removed visual markers**: Removed red object detection markers from photos in all components (AnalysisResult, Reports, ComparisonItem) for cleaner interface
 
 ## Previous Changes (2025-09-09)
 - Configured Vite server for Replit environment (host: 0.0.0.0, port: 5000)
