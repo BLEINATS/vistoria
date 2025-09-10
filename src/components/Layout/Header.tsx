@@ -49,16 +49,28 @@ const Header: React.FC = () => {
   const handleLogout = async () => {
     console.log('Iniciando logout...');
     try {
+      // Limpar dados locais primeiro
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Tentar logout no Supabase
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('Erro no logout:', error);
+        console.log('Aviso no logout:', error.message);
+        // Mesmo com erro, continuar o logout local
       } else {
         console.log('Logout realizado com sucesso');
-        navigate('/login');
       }
+      
+      // Sempre navegar para login, independente de erro na sessão
+      navigate('/login');
+      
     } catch (error) {
-      console.error('Erro inesperado no logout:', error);
-      navigate('/login'); // Navegar mesmo com erro
+      console.log('Erro inesperado no logout, fazendo logout local:', error);
+      // Limpar dados e navegar mesmo com erro
+      localStorage.clear();
+      sessionStorage.clear();
+      navigate('/login');
     }
   };
 
