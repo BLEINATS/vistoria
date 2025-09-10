@@ -285,21 +285,7 @@ const Reports: React.FC = () => {
                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
                           <ZoomIn className="w-8 h-8 text-white" />
                         </div>
-                        {photo.analysisResult.objectsDetected.map(obj => 
-                          obj.markerCoordinates && (
-                            <div 
-                              key={`marker-${obj.id}`}
-                              className="absolute"
-                              style={{ left: `${obj.markerCoordinates.x}%`, top: `${obj.markerCoordinates.y}%`, transform: 'translate(-50%, -100%)' }}
-                              title={obj.item}
-                            >
-                              <div className="relative">
-                                <MapPin className="w-6 h-6 text-red-500 drop-shadow-lg" fill="currentColor" />
-                                <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap">{obj.item}</span>
-                              </div>
-                            </div>
-                          )
-                        )}
+                        {/* Marcadores visuais removidos para melhor experiência */}
                       </div>
                       <div className="space-y-4 text-sm">
                         <div>
