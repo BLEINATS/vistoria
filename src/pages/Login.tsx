@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Camera, Mail, Lock } from 'lucide-react';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -13,6 +15,14 @@ const Login: React.FC = () => {
   const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
   const [resetMessage, setResetMessage] = useState<string | null>(null);
+
+  // Redirect to dashboard if user is already authenticated
+  useEffect(() => {
+    if (user && !authLoading) {
+      console.log('🚀 User already authenticated, redirecting to dashboard...');
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, authLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,15 +49,9 @@ const Login: React.FC = () => {
         setLoading(false);
       } else {
         console.log('✅ Login successful, user authenticated:', data?.user?.id);
-        // Don't redirect immediately - let AuthContext handle the state update first
-        console.log('🔄 Waiting for AuthContext to update...');
-        
-        // Add a small delay to allow AuthContext to process the auth state change
-        setTimeout(() => {
-          console.log('🚀 Redirecting to dashboard...');
-          setLoading(false);
-          navigate('/dashboard', { replace: true });
-        }, 500);
+        // Don't redirect here - let the useEffect handle redirection when user state updates
+        console.log('🔄 Login completed, AuthContext will handle redirection...');
+        setLoading(false);
       }
     } catch (err) {
       console.error('Unexpected login error:', err);
