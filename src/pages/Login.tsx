@@ -26,13 +26,19 @@ const Login: React.FC = () => {
   // Redirect to dashboard if user is already authenticated
   // Add delay to prevent race condition with logout
   useEffect(() => {
+    console.log('Login: useEffect rodou. User:', user?.email || 'null', 'Loading:', authLoading);
     if (user && !authLoading) {
+      console.log('Login: Usuário autenticado, redirecionando para dashboard em 150ms...');
       // Small delay to avoid race condition with logout
       const timer = setTimeout(() => {
+        console.log('Login: Executando redirecionamento para dashboard');
         navigate('/dashboard', { replace: true });
       }, 150);
       
-      return () => clearTimeout(timer);
+      return () => {
+        console.log('Login: Cancelando timer de redirecionamento');
+        clearTimeout(timer);
+      };
     }
   }, [user, authLoading, navigate]);
 
