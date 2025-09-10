@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase, mapToProperty } from '../lib/supabase';
 import { Property, InspectionPhoto, DetectedObject } from '../types';
-import { Loader, ArrowLeft, GitCompareArrows, Download, Printer, Share2, Pencil, CheckCircle, PlusCircle, MinusCircle } from 'lucide-react';
+import { Loader, ArrowLeft, GitCompareArrows, Download, Printer, Share2, Pencil, CheckCircle, PlusCircle, MinusCircle, Settings, Check, X } from 'lucide-react';
 import ComparisonItem from '../components/Compare/ComparisonItem';
 import { useAuth } from '../contexts/AuthContext';
 import { useReportActions } from '../hooks/useReportActions';
@@ -14,6 +14,16 @@ interface FullInspectionData {
   inspectorName: string | null;
 }
 
+interface ReportConfig {
+  summary: boolean;
+  rooms: { [roomName: string]: {
+    changedItems: boolean;
+    newItems: boolean;
+    missingItems: boolean;
+    unchangedItems: boolean;
+  }};
+}
+
 const CompareInspections: React.FC = () => {
   const { entryInspectionId, exitInspectionId } = useParams();
   const navigate = useNavigate();
@@ -21,6 +31,11 @@ const CompareInspections: React.FC = () => {
   const [entryData, setEntryData] = useState<FullInspectionData | null>(null);
   const [exitData, setExitData] = useState<FullInspectionData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showConfigPanel, setShowConfigPanel] = useState(false);
+  const [reportConfig, setReportConfig] = useState<ReportConfig>({
+    summary: true,
+    rooms: {}
+  });
 
   const reportRef = useRef<HTMLDivElement>(null);
   const { handlePrint, handleShare, handleDownloadPdf } = useReportActions(reportRef);
@@ -73,6 +88,23 @@ const CompareInspections: React.FC = () => {
     };
   }, [user]);
 
+  // Initialize report configuration with all items checked by default
+  const initializeReportConfig = useCallback((rooms: string[]) => {
+    const roomConfig: { [roomName: string]: any } = {};
+    rooms.forEach(room => {
+      roomConfig[room] = {
+        changedItems: true,
+        newItems: true,
+        missingItems: true,
+        unchangedItems: true
+      };
+    });
+    setReportConfig({
+      summary: true,
+      rooms: roomConfig
+    });
+  }, []);
+
   useEffect(() => {
     const loadAllData = async () => {
       if (!entryInspectionId || !exitInspectionId) {
@@ -86,10 +118,17 @@ const CompareInspections: React.FC = () => {
       ]);
       setEntryData(entry);
       setExitData(exit);
+      
+      // Initialize report config after data is loaded
+      if (entry && exit) {
+        const allRooms = [...new Set([...entry.photos.map(p => p.room), ...exit.photos.map(p => p.room)])];
+        initializeReportConfig(allRooms);
+      }
+      
       setLoading(false);
     };
     loadAllData();
-  }, [entryInspectionId, exitInspectionId, fetchInspectionData]);
+  }, [entryInspectionId, exitInspectionId, fetchInspectionData, initializeReportConfig]);
   
   const handleEditEntry = () => {
     if (!entryData) return;
@@ -110,6 +149,61 @@ const CompareInspections: React.FC = () => {
         inspectionType: 'exit',
         inspectionId: exitInspectionId,
       },
+    });
+  };
+
+  const toggleReportSection = (section: 'summary' | string, subsection?: string) => {
+    setReportConfig(prev => {
+      if (section === 'summary') {
+        return { ...prev, summary: !prev.summary };
+      } else if (subsection) {
+        return {
+          ...prev,
+          rooms: {
+            ...prev.rooms,
+            [section]: {
+              ...prev.rooms[section],
+              [subsection]: !prev.rooms[section]?.[subsection]
+            }
+          }
+        };
+      } else {
+        // Toggle entire room
+        const roomConfig = prev.rooms[section];
+        const allChecked = roomConfig?.changedItems && roomConfig?.newItems && roomConfig?.missingItems && roomConfig?.unchangedItems;
+        return {
+          ...prev,
+          rooms: {
+            ...prev.rooms,
+            [section]: {
+              changedItems: !allChecked,
+              newItems: !allChecked,
+              missingItems: !allChecked,
+              unchangedItems: !allChecked
+            }
+          }
+        };
+      }
+    });
+  };
+
+  const selectAll = () => {
+    const allRooms = [...new Set([...entryData?.photos.map(p => p.room) || [], ...exitData?.photos.map(p => p.room) || []])];
+    initializeReportConfig(allRooms);
+  };
+
+  const deselectAll = () => {
+    setReportConfig({
+      summary: false,
+      rooms: Object.keys(reportConfig.rooms).reduce((acc, room) => {
+        acc[room] = {
+          changedItems: false,
+          newItems: false,
+          missingItems: false,
+          unchangedItems: false
+        };
+        return acc;
+      }, {} as any)
     });
   };
 
@@ -181,6 +275,10 @@ const CompareInspections: React.FC = () => {
           Voltar
         </button>
         <div className="flex items-center space-x-2 flex-wrap gap-y-2">
+          <button onClick={() => setShowConfigPanel(!showConfigPanel)} title="Configurar Relatório" className="inline-flex items-center justify-center sm:px-3 sm:py-2 px-2 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600">
+            <Settings className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Configurar</span>
+          </button>
           <button onClick={handleEditEntry} title="Editar Vistoria de Entrada" className="inline-flex items-center justify-center sm:px-3 sm:py-2 px-2 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600">
             <Pencil className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Editar Entrada</span>
@@ -203,6 +301,117 @@ const CompareInspections: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Configuration Panel */}
+      {showConfigPanel && (
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 p-6 no-print">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Configurar Relatório</h3>
+            <button onClick={() => setShowConfigPanel(false)} className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="flex gap-2 mb-4">
+              <button onClick={selectAll} className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1">
+                <Check className="w-4 h-4" />
+                Selecionar Tudo
+              </button>
+              <button onClick={deselectAll} className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1">
+                <X className="w-4 h-4" />
+                Desmarcar Tudo
+              </button>
+            </div>
+
+            {/* Summary Section */}
+            <div className="border-b border-gray-200 dark:border-slate-700 pb-3">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={reportConfig.summary}
+                  onChange={() => toggleReportSection('summary')}
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Resumo das Diferenças</span>
+              </label>
+            </div>
+
+            {/* Room Sections */}
+            {Object.keys(reportConfig.rooms).map(room => {
+              const roomConfig = reportConfig.rooms[room];
+              const { changedItems, unchangedItems, newItems, missingItems } = getComparisonData(room);
+              const hasContent = changedItems.length > 0 || unchangedItems.length > 0 || newItems.length > 0 || missingItems.length > 0;
+              
+              if (!hasContent) return null;
+
+              return (
+                <div key={room} className="border border-gray-200 dark:border-slate-700 rounded-lg p-3">
+                  <label className="flex items-center space-x-2 cursor-pointer mb-2">
+                    <input
+                      type="checkbox"
+                      checked={roomConfig?.changedItems && roomConfig?.newItems && roomConfig?.missingItems && roomConfig?.unchangedItems}
+                      onChange={() => toggleReportSection(room)}
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{room}</span>
+                  </label>
+                  
+                  <div className="ml-6 space-y-1">
+                    {changedItems.length > 0 && (
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={roomConfig?.changedItems || false}
+                          onChange={() => toggleReportSection(room, 'changedItems')}
+                          className="h-3 w-3 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                        />
+                        <span className="text-xs text-gray-700 dark:text-gray-300">Itens com Mudanças ({changedItems.length})</span>
+                      </label>
+                    )}
+                    
+                    {newItems.length > 0 && (
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={roomConfig?.newItems || false}
+                          onChange={() => toggleReportSection(room, 'newItems')}
+                          className="h-3 w-3 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                        />
+                        <span className="text-xs text-gray-700 dark:text-gray-300">Itens Novos na Saída ({newItems.length})</span>
+                      </label>
+                    )}
+                    
+                    {missingItems.length > 0 && (
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={roomConfig?.missingItems || false}
+                          onChange={() => toggleReportSection(room, 'missingItems')}
+                          className="h-3 w-3 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                        />
+                        <span className="text-xs text-gray-700 dark:text-gray-300">Itens Faltando na Saída ({missingItems.length})</span>
+                      </label>
+                    )}
+                    
+                    {unchangedItems.length > 0 && (
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={roomConfig?.unchangedItems || false}
+                          onChange={() => toggleReportSection(room, 'unchangedItems')}
+                          className="h-3 w-3 text-gray-600 border-gray-300 rounded focus:ring-gray-500"
+                        />
+                        <span className="text-xs text-gray-700 dark:text-gray-300">Itens Sem Alterações ({unchangedItems.length})</span>
+                      </label>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
       
       <div ref={reportRef} className="space-y-8">
         <div className="text-center pt-4 report-section">
@@ -210,29 +419,42 @@ const CompareInspections: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400">{entryData.property.name}</p>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 report-section">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Resumo das Diferenças</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/30 rounded-lg">
-              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{totalChanges.changed}</div>
-              <div className="text-sm text-orange-600 dark:text-orange-400">Itens com Condição Alterada</div>
-            </div>
-            <div className="text-center p-4 bg-green-50 dark:bg-green-900/30 rounded-lg">
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">{totalChanges.new}</div>
-              <div className="text-sm text-green-600 dark:text-green-400">Itens Novos na Saída</div>
-            </div>
-            <div className="text-center p-4 bg-red-50 dark:bg-red-900/30 rounded-lg">
-              <div className="text-2xl font-bold text-red-600 dark:text-red-400">{totalChanges.missing}</div>
-              <div className="text-sm text-red-600 dark:text-red-400">Itens Faltando na Saída</div>
+        {reportConfig.summary && (
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 report-section">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Resumo das Diferenças</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/30 rounded-lg">
+                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{totalChanges.changed}</div>
+                <div className="text-sm text-orange-600 dark:text-orange-400">Itens com Condição Alterada</div>
+              </div>
+              <div className="text-center p-4 bg-green-50 dark:bg-green-900/30 rounded-lg">
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{totalChanges.new}</div>
+                <div className="text-sm text-green-600 dark:text-green-400">Itens Novos na Saída</div>
+              </div>
+              <div className="text-center p-4 bg-red-50 dark:bg-red-900/30 rounded-lg">
+                <div className="text-2xl font-bold text-red-600 dark:text-red-400">{totalChanges.missing}</div>
+                <div className="text-sm text-red-600 dark:text-red-400">Itens Faltando na Saída</div>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {allRooms.map((room, roomIndex) => {
           const { changedItems, unchangedItems, newItems, missingItems } = getComparisonData(room);
           const hasChanges = changedItems.length > 0 || newItems.length > 0 || missingItems.length > 0;
+          const roomConfig = reportConfig.rooms[room];
 
           if (!hasChanges && unchangedItems.length === 0) return null;
+
+          // Check if any section of this room is selected
+          const showRoom = roomConfig && (
+            (changedItems.length > 0 && roomConfig.changedItems) ||
+            (newItems.length > 0 && roomConfig.newItems) ||
+            (missingItems.length > 0 && roomConfig.missingItems) ||
+            (unchangedItems.length > 0 && roomConfig.unchangedItems)
+          );
+
+          if (!showRoom) return null;
 
           return (
             <div key={roomIndex} className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 report-room-container">
@@ -241,30 +463,30 @@ const CompareInspections: React.FC = () => {
                 Comparativo: {room}
               </h3>
               
-              {!hasChanges && <p className="text-gray-500 dark:text-gray-400 text-center p-4">Nenhuma mudança detectada neste ambiente.</p>}
+              {!hasChanges && roomConfig.unchangedItems && <p className="text-gray-500 dark:text-gray-400 text-center p-4">Nenhuma mudança detectada neste ambiente.</p>}
 
-              {changedItems.length > 0 && (
+              {changedItems.length > 0 && roomConfig.changedItems && (
                 <div className="mb-4">
                   <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2 flex items-center gap-2"><Pencil className="w-4 h-4 text-orange-500"/>Itens com Mudanças</h4>
                   {changedItems.map(item => <ComparisonItem key={item.entry.id} item={item} type="changed" />)}
                 </div>
               )}
 
-              {newItems.length > 0 && (
+              {newItems.length > 0 && roomConfig.newItems && (
                 <div className="mb-4">
                   <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2 flex items-center gap-2"><PlusCircle className="w-4 h-4 text-green-500"/>Itens Novos na Saída</h4>
                   {newItems.map(item => <ComparisonItem key={item.id} item={{ exit: item }} type="new" />)}
                 </div>
               )}
 
-              {missingItems.length > 0 && (
+              {missingItems.length > 0 && roomConfig.missingItems && (
                 <div className="mb-4">
                   <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2 flex items-center gap-2"><MinusCircle className="w-4 h-4 text-red-500"/>Itens Faltando na Saída</h4>
                   {missingItems.map(item => <ComparisonItem key={item.id} item={{ entry: item }} type="missing" />)}
                 </div>
               )}
 
-              {unchangedItems.length > 0 && (
+              {unchangedItems.length > 0 && roomConfig.unchangedItems && (
                 <div className="mt-6">
                   <details>
                     <summary className="font-semibold text-gray-600 dark:text-gray-400 cursor-pointer flex items-center gap-2">
