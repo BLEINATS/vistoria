@@ -271,9 +271,20 @@ const Inspection: React.FC = () => {
       analysis = await getRealAIAnalysis(urlData.publicUrl, roomName, entryObjectsForRoom);
     } catch (e: any) {
       console.error('Error getting AI analysis:', e);
-      updateToast(toastId, `Falha na análise da IA: ${e.message}`, 'error');
+      
+      // Create user-friendly error messages
+      let userFriendlyMessage = '';
+      if (e.message?.includes('Failed to send a request to the Edge Function') || e.name === 'FunctionsFetchError') {
+        userFriendlyMessage = 'Serviço de análise temporariamente indisponível. Tente novamente em alguns instantes.';
+      } else if (e.message?.includes('network') || e.message?.includes('fetch')) {
+        userFriendlyMessage = 'Problemas de conexão. Verifique sua internet e tente novamente.';
+      } else {
+        userFriendlyMessage = `Falha na análise da IA: ${e.message}`;
+      }
+      
+      updateToast(toastId, userFriendlyMessage, 'error');
       setAnalyzingRoom(null);
-      setRoomErrors(prev => ({ ...prev, [roomName]: `Falha na análise: ${e.message}` }));
+      setRoomErrors(prev => ({ ...prev, [roomName]: userFriendlyMessage }));
       await supabase.storage.from('inspection_photos').remove([filePath]);
       return;
     }
