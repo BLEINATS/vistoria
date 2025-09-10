@@ -84,8 +84,7 @@ export const useSubscription = () => {
       }
     ]);
     
-    // Simulate small delay to prevent instant completion
-    await new Promise(resolve => setTimeout(resolve, 50));
+    // No delay needed - data is already static
   }, []);
 
   // Fetch user's current limits and usage (real data from database)

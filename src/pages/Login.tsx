@@ -26,12 +26,8 @@ const Login: React.FC = () => {
   // Redirect to dashboard if user is already authenticated
   useEffect(() => {
     if (user && !authLoading) {
-      // Small delay to avoid race condition with logout
-      const timer = setTimeout(() => {
-        navigate('/dashboard', { replace: true });
-      }, 150);
-      
-      return () => clearTimeout(timer);
+      // Immediate redirect - no delay needed
+      navigate('/dashboard', { replace: true });
     }
   }, [user, authLoading, navigate]);
 

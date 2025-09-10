@@ -305,10 +305,10 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-32">
         <div className="text-center">
-          <Activity className="w-12 h-12 animate-pulse text-blue-500 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-300">Carregando dashboard...</p>
+          <Activity className="w-8 h-8 animate-pulse text-blue-500 mx-auto mb-2" />
+          <p className="text-sm text-gray-600 dark:text-gray-300">Carregando...</p>
         </div>
       </div>
     );

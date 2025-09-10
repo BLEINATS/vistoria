@@ -65,8 +65,8 @@ const Header: React.FC = () => {
         console.log('Logout realizado com sucesso');
       }
       
-      // Aguardar um pouco para garantir que o AuthContext processe o logout
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Aguardar mínimo para garantir que o AuthContext processe o logout
+      await new Promise(resolve => setTimeout(resolve, 50));
       
       // Sempre navegar para login, independente de erro na sessão
       navigate('/login', { replace: true });
@@ -77,7 +77,7 @@ const Header: React.FC = () => {
       localStorage.clear();
       sessionStorage.clear();
       // Aguardar antes de navegar
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 50));
       navigate('/login', { replace: true });
     }
   };
