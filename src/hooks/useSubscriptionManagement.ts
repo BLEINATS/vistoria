@@ -81,6 +81,9 @@ export const useSubscriptionManagement = () => {
       
       localStorage.setItem('vistoria_subscription', JSON.stringify(subscriptionData));
       
+      // Trigger custom event for same-tab synchronization (since storage events don't fire on the same tab)
+      window.dispatchEvent(new CustomEvent('subscriptionUpdated', { detail: subscriptionData }));
+      
       return {
         success: true,
         message: `Plano ${plan.name} ativado com sucesso!`

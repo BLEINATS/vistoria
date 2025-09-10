@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import type { SubscriptionPlan, UserPlanLimits, Subscription } from '../types/subscription';
@@ -10,6 +10,9 @@ export const useSubscription = () => {
   const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Ref for fetchUserLimits to avoid stale closures in event listeners
+  const fetchUserLimitsRef = useRef<(() => Promise<void>) | null>(null);
 
   // Static plan limits mapping to prevent dependency loops
   const PLAN_LIMITS = {
@@ -90,15 +93,23 @@ export const useSubscription = () => {
     if (!user) return;
 
     try {
-      // Get current plan from localStorage
-      const stored = localStorage.getItem('vistoria_subscription');
+      // Get current plan from localStorage with better error handling
       let planName = 'Gratuito';
       
+      const stored = localStorage.getItem('vistoria_subscription');
       if (stored) {
         try {
           const data = JSON.parse(stored);
           planName = data.plan_name || 'Gratuito';
+          
+          // Ensure data is from this specific user
+          if (data.user_id !== user.id) {
+            localStorage.removeItem('vistoria_subscription');
+            planName = 'Gratuito';
+          }
         } catch {
+          // Clear corrupted data
+          localStorage.removeItem('vistoria_subscription');
           planName = 'Gratuito';
         }
       }
@@ -158,6 +169,48 @@ export const useSubscription = () => {
       console.error('Error fetching user limits:', err);
       setError('Erro ao carregar limites do usuário');
     }
+  }, [user]);
+
+  // Update ref for cross-tab sync
+  useEffect(() => {
+    fetchUserLimitsRef.current = fetchUserLimits;
+  });
+
+  // Cross-tab synchronization
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'vistoria_subscription' && user && fetchUserLimitsRef.current) {
+        // Refresh user limits when subscription changes in other tabs
+        fetchUserLimitsRef.current();
+      }
+    };
+
+    const handleCustomEvent = (e: CustomEvent) => {
+      if (user && fetchUserLimitsRef.current) {
+        // Refresh user limits when subscription changes in same tab
+        fetchUserLimitsRef.current();
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user && fetchUserLimitsRef.current) {
+        // Refresh data when tab becomes visible (user switches back to this tab)
+        fetchUserLimitsRef.current();
+      }
+    };
+
+    // Listen for localStorage changes from other tabs
+    window.addEventListener('storage', handleStorageChange);
+    // Listen for custom subscription update events (same tab)
+    window.addEventListener('subscriptionUpdated', handleCustomEvent as EventListener);
+    // Listen for tab visibility changes
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('subscriptionUpdated', handleCustomEvent as EventListener);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [user]);
 
   // Skip subscription fetch to prevent cache issues
