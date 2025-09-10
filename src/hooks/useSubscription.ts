@@ -5,59 +5,33 @@ import type { SubscriptionPlan, UserPlanLimits, Subscription } from '../types/su
 
 export const useSubscription = () => {
   const { user } = useAuth();
-  const [plans] = useState<SubscriptionPlan[]>([
-    {
-      id: '1',
-      name: 'Gratuito',
-      price: 0,
-      currency: 'BRL',
-      interval_type: 'month',
-      properties_limit: 1,
-      environments_limit: 3,
-      photos_per_environment_limit: 5,
-      ai_analysis_limit: null,
-      is_active: true,
-      created_at: '',
-      updated_at: ''
-    },
-    {
-      id: '2',
-      name: 'Básico',
-      price: 47.00,
-      currency: 'BRL',
-      interval_type: 'month',
-      properties_limit: 2,
-      environments_limit: null,
-      photos_per_environment_limit: 5,
-      ai_analysis_limit: null,
-      is_active: true,
-      created_at: '',
-      updated_at: ''
-    },
-    {
-      id: '3',
-      name: 'Premium',
-      price: 77.00,
-      currency: 'BRL',
-      interval_type: 'month',
-      properties_limit: null,
-      environments_limit: null,
-      photos_per_environment_limit: 5,
-      ai_analysis_limit: null,
-      is_active: true,
-      created_at: '',
-      updated_at: ''
-    }
-  ]);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [userLimits, setUserLimits] = useState<UserPlanLimits | null>(null);
   const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch available plans (using hardcoded data for demo)
+  // Fetch available plans from database
   const fetchPlans = useCallback(async () => {
-    // Plans are already set in state, no need to fetch
-    await new Promise(resolve => setTimeout(resolve, 100)); // Simulate loading
+    try {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('price', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching plans:', error);
+        throw error;
+      }
+
+      setPlans(data || []);
+    } catch (error) {
+      console.error('Error fetching plans:', error);
+      setError('Erro ao carregar planos');
+      // Fallback to empty array if fetch fails
+      setPlans([]);
+    }
   }, []);
 
   // Fetch user's current limits and usage (real data from database)
