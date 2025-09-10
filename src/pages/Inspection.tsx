@@ -460,6 +460,23 @@ const Inspection: React.FC = () => {
     setPhotoToDelete(null);
   };
 
+  const handleBackNavigation = useCallback(async () => {
+    if (inspectionId) {
+      // Save observations and any pending data before leaving
+      await handleSaveObservations();
+      
+      // Update inspection status to indicate it was saved (but not necessarily completed)
+      if (photos.length > 0) {
+        await supabase
+          .from('inspections')
+          .update({ status: 'in-progress' })
+          .eq('id', inspectionId);
+      }
+    }
+    
+    navigate(`/property/${property.id}`);
+  }, [inspectionId, photos.length, property.id, navigate]);
+
   const generateReport = async () => {
     if (photos.length === 0) {
       addToast('Adicione pelo menos uma foto para gerar o relatório', 'error');
@@ -524,7 +541,7 @@ const Inspection: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => navigate(`/property/${property.id}`)}
+            onClick={handleBackNavigation}
             className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700"
           >
             <ArrowLeft className="w-6 h-6" />
