@@ -6,6 +6,7 @@ import Inspection from './pages/Inspection';
 import Reports from './pages/Reports';
 import PropertyDetail from './pages/PropertyDetail';
 import CompareInspections from './pages/CompareInspections';
+import Profile from './pages/Profile';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -32,6 +33,8 @@ function App() {
               <Route path="/property/:id" element={<PropertyDetail />} />
               <Route path="/inspection" element={<Inspection />} />
               <Route path="/reports" element={<Reports />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/profile/:section" element={<Profile />} />
               <Route path="/compare/:entryInspectionId/:exitInspectionId" element={<CompareInspections />} />
             </Route>
           </Route>
