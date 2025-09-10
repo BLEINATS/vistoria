@@ -84,7 +84,7 @@ const Profile: React.FC = () => {
     
     try {
       // First try to fetch basic fields that should exist
-      const { data: basicData, error: basicError } = await supabase
+      const { data: basicData } = await supabase
         .from('profiles')
         .select('full_name, avatar_url')
         .eq('id', user.id)
