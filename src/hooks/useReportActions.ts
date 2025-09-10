@@ -127,150 +127,93 @@ export const useReportActions = (reportRef: React.RefObject<HTMLDivElement>) => 
         const yPosition = margin + ((availableHeight - scaledHeight) / 2);
         pdf.addImage(imgData, 'JPEG', margin, yPosition, availableWidth, scaledHeight);
       } else {
-        // Intelligent multi-page pagination - avoid cutting elements
-        const getSmartPageBreaks = (): number[] => {
-          const breaks: number[] = [0]; // Start with first page at top
+        // Robust intelligent pagination - prevent cutting elements and ensure all content is rendered
+        const maxPageHeightInCanvas = availableHeight / scale;
+        let currentY = 0;
+        let pageNumber = 0;
+        
+        while (currentY < canvas.height) {
+          // Calculate ideal end for this page
+          let pageEndY = Math.min(currentY + maxPageHeightInCanvas, canvas.height);
           
-          // Find all elements that shouldn't be cut
-          const protectedSelectors = '.report-section, .report-room-container, .report-photo-analysis';
-          const protectedElements = reportElement.querySelectorAll(protectedSelectors);
-          const elementBounds: { top: number, bottom: number }[] = [];
-          
-          // Calculate positions of protected elements in canvas coordinates
+          // Look for protected elements that would be cut
+          const protectedElements = reportElement.querySelectorAll('.report-section, .report-room-container, .report-photo-analysis');
           const reportRect = reportElement.getBoundingClientRect();
+          
+          // Find a safe break point - prioritize protecting elements over page size
+          let safeBreakPoint = pageEndY;
+          
           protectedElements.forEach(element => {
             const rect = element.getBoundingClientRect();
-            const relativeTop = rect.top - reportRect.top;
-            const relativeBottom = rect.bottom - reportRect.top;
+            const elementTop = ((rect.top - reportRect.top) / reportElement.scrollHeight) * canvas.height;
+            const elementBottom = ((rect.bottom - reportRect.top) / reportElement.scrollHeight) * canvas.height;
             
-            // Convert to canvas pixel coordinates
-            const canvasTop = (relativeTop / reportElement.scrollHeight) * canvas.height;
-            const canvasBottom = (relativeBottom / reportElement.scrollHeight) * canvas.height;
-            
-            elementBounds.push({
-              top: canvasTop,
-              bottom: canvasBottom
-            });
+            // If this element would be cut by our ideal break, move break to protect it
+            if (elementTop < pageEndY && elementBottom > pageEndY && elementTop > currentY) {
+              // Always break before the element to protect it completely
+              safeBreakPoint = Math.min(safeBreakPoint, elementTop);
+            }
           });
           
-          // Sort elements by position
-          elementBounds.sort((a, b) => a.top - b.top);
+          // Ensure we don't exceed canvas bounds
+          safeBreakPoint = Math.min(safeBreakPoint, canvas.height);
           
-          let currentPageStart = 0;
-          const maxPageHeight = availableHeight / scale; // Convert back to canvas pixels
+          const pageHeight = safeBreakPoint - currentY;
           
-          while (currentPageStart < canvas.height) {
-            const idealPageEnd = currentPageStart + maxPageHeight;
+          // Always render remaining content, even if small
+          if (pageHeight > 0) {
+            // Add new page only after confirming we have content to render
+            if (pageNumber > 0) pdf.addPage();
             
-            if (idealPageEnd >= canvas.height) {
-              // Last page reached
-              break;
-            }
+            // Create the page slice
+            const sliceCanvas = document.createElement('canvas');
+            const sliceCtx = sliceCanvas.getContext('2d')!;
             
-            // Find the best break point to avoid cutting elements
-            let bestBreakPoint = idealPageEnd;
+            sliceCanvas.width = canvas.width;
+            sliceCanvas.height = pageHeight;
             
-            // Look for elements that would be cut by the ideal break
-            for (const element of elementBounds) {
-              // If element spans across the ideal break point
-              if (element.top < idealPageEnd && element.bottom > idealPageEnd) {
-                // Always prefer breaking before the element
-                const breakBefore = element.top;
-                const contentBeforeBreak = breakBefore - currentPageStart;
-                
-                if (contentBeforeBreak > maxPageHeight * 0.3) { // At least 30% of page content
-                  bestBreakPoint = breakBefore;
-                  break;
-                } else {
-                  // Only break after if it doesn't exceed page limits
-                  const breakAfter = element.bottom;
-                  const pageHeightIfBreakAfter = breakAfter - currentPageStart;
-                  
-                  if (pageHeightIfBreakAfter <= maxPageHeight) {
-                    bestBreakPoint = breakAfter;
-                    break;
-                  } else {
-                    // Can't fit this element, look for previous safe break point
-                    let safePreviousBreak = idealPageEnd;
-                    for (let j = elementBounds.indexOf(element) - 1; j >= 0; j--) {
-                      const prevElement = elementBounds[j];
-                      if (prevElement.bottom <= idealPageEnd && 
-                          (prevElement.bottom - currentPageStart) >= maxPageHeight * 0.3) {
-                        safePreviousBreak = prevElement.bottom;
-                        break;
-                      }
-                    }
-                    bestBreakPoint = safePreviousBreak;
-                    break;
-                  }
-                }
-              }
-            }
+            // Fill with white background
+            sliceCtx.fillStyle = '#ffffff';
+            sliceCtx.fillRect(0, 0, canvas.width, pageHeight);
             
-            // Always enforce maximum page height limit
-            bestBreakPoint = Math.min(bestBreakPoint, currentPageStart + maxPageHeight);
+            // Draw the slice from original canvas
+            sliceCtx.drawImage(
+              canvas,
+              0, currentY, // source position
+              canvas.width, pageHeight, // source size
+              0, 0, // destination position
+              canvas.width, pageHeight // destination size
+            );
             
-            // Ensure we don't break inside any protected element
-            for (const element of elementBounds) {
-              if (bestBreakPoint > element.top && bestBreakPoint < element.bottom) {
-                // We're inside an element, move to element boundary
-                const distanceToTop = bestBreakPoint - element.top;
-                const distanceToBottom = element.bottom - bestBreakPoint;
-                
-                if (distanceToTop < distanceToBottom && element.top >= currentPageStart) {
-                  bestBreakPoint = element.top; // Move to start of element
-                } else if (element.bottom - currentPageStart <= maxPageHeight) {
-                  bestBreakPoint = element.bottom; // Move to end of element
-                } else {
-                  // Element is too big for page, break at ideal point (emergency fallback)
-                  bestBreakPoint = Math.min(idealPageEnd, currentPageStart + maxPageHeight);
-                }
-                break;
-              }
-            }
+            // Add to PDF
+            const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.95);
+            const pdfSliceHeight = pageHeight * scale;
             
-            breaks.push(bestBreakPoint);
-            currentPageStart = bestBreakPoint;
+            // Ensure the slice height doesn't exceed available space
+            const finalHeight = Math.min(pdfSliceHeight, availableHeight);
+            
+            pdf.addImage(sliceData, 'JPEG', margin, margin, availableWidth, finalHeight);
+            
+            pageNumber++;
           }
           
-          return breaks;
-        };
-
-        // Get intelligent page breaks
-        const pageBreaks = getSmartPageBreaks();
-        
-        // Create pages based on intelligent breaks
-        for (let i = 0; i < pageBreaks.length; i++) {
-          if (i > 0) pdf.addPage();
+          // Move to next section
+          currentY = safeBreakPoint;
           
-          const pageStart = pageBreaks[i];
-          const pageEnd = i < pageBreaks.length - 1 ? pageBreaks[i + 1] : canvas.height;
-          const pageContentHeight = pageEnd - pageStart;
+          // Safety check to prevent infinite loop - but warn and continue to render
+          if (pageNumber > 50) {
+            console.warn(`PDF generation reached ${pageNumber} pages, continuing but this may indicate an issue`);
+            if (pageNumber > 100) {
+              console.error('PDF generation stopped at 100 pages to prevent infinite loop');
+              break;
+            }
+          }
           
-          // Create a slice of the original canvas for this page
-          const sliceCanvas = document.createElement('canvas');
-          const sliceCtx = sliceCanvas.getContext('2d')!;
-          
-          sliceCanvas.width = canvas.width;
-          sliceCanvas.height = pageContentHeight;
-          
-          // Fill with white background first
-          sliceCtx.fillStyle = '#ffffff';
-          sliceCtx.fillRect(0, 0, canvas.width, pageContentHeight);
-          
-          // Draw the appropriate slice from the original canvas
-          sliceCtx.drawImage(
-            canvas,
-            0, pageStart, // source x, y
-            canvas.width, pageContentHeight, // source width, height
-            0, 0, // destination x, y
-            canvas.width, pageContentHeight // destination width, height
-          );
-          
-          const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.95);
-          const sliceHeight = pageContentHeight * scale;
-          
-          pdf.addImage(sliceData, 'JPEG', margin, margin, availableWidth, sliceHeight);
+          // Ensure progress is made
+          if (safeBreakPoint === currentY && pageHeight === 0) {
+            console.error('PDF pagination stuck - no progress made');
+            break;
+          }
         }
       }
       

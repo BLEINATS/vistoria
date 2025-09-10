@@ -20,15 +20,11 @@ interface ComparisonItemProps {
 interface PhotoWithMarkersProps {
   label: string;
   imageUrl?: string;
-  detectedObject?: DetectedObject;
-  missingObject?: DetectedObject; // Object that should be here but is missing
 }
 
 const PhotoWithMarkers: React.FC<PhotoWithMarkersProps> = ({ 
   label, 
-  imageUrl, 
-  detectedObject, 
-  missingObject 
+  imageUrl 
 }) => {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
@@ -68,9 +64,6 @@ const PhotoWithMarkers: React.FC<PhotoWithMarkersProps> = ({
   );
 };
 
-const PhotoThumbnail: React.FC<{ label: string, imageUrl?: string }> = ({ label, imageUrl }) => {
-  return <PhotoWithMarkers label={label} imageUrl={imageUrl} />;
-};
 
 const ComparisonItem: React.FC<ComparisonItemProps> = ({ item, type }) => {
   
@@ -133,12 +126,10 @@ const ComparisonItem: React.FC<ComparisonItemProps> = ({ item, type }) => {
             <PhotoWithMarkers 
               label="Entrada" 
               imageUrl={item.entry?.photoUrl} 
-              detectedObject={item.entry}
             />
             <PhotoWithMarkers 
               label="Saída" 
               imageUrl={item.exitPhotoUrl} // Use exit photo to show where object is missing
-              missingObject={item.entry}
             />
           </>
         ) : type === 'new' ? (
@@ -151,7 +142,6 @@ const ComparisonItem: React.FC<ComparisonItemProps> = ({ item, type }) => {
             <PhotoWithMarkers 
               label="Saída" 
               imageUrl={item.exit?.photoUrl} 
-              detectedObject={item.exit}
             />
           </>
         ) : (
@@ -160,12 +150,10 @@ const ComparisonItem: React.FC<ComparisonItemProps> = ({ item, type }) => {
             <PhotoWithMarkers 
               label="Entrada" 
               imageUrl={item.entry?.photoUrl} 
-              detectedObject={item.entry}
             />
             <PhotoWithMarkers 
               label="Saída" 
-              imageUrl={item.exit?.photoUrl} 
-              detectedObject={item.exit}
+              imageUrl={item.exit?.photoUrl}
             />
           </>
         )}
