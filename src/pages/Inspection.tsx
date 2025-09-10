@@ -578,6 +578,7 @@ const Inspection: React.FC = () => {
       
       addToast('Relatório gerado com sucesso!', 'success');
       
+      console.log('🚀 Navigating to reports page with inspectionId:', inspectionId);
       navigate('/reports', { 
         state: { inspectionId } 
       });
