@@ -165,43 +165,32 @@ const Dashboard: React.FC = () => {
       // Conta apenas itens faltando da última vistoria
       let criticalIssuesCount = 0;
       
-      // Debug: verificar todas as vistorias
-      console.log('Dashboard Debug - Todas as vistorias:', inspectionsData.map(i => ({ 
-        id: i.id, 
-        inspection_type: i.inspection_type, 
-        status: i.status, 
-        created_at: i.created_at 
-      })));
+      // Buscar a última vistoria de SAÍDA concluída
+      const exitInspections = inspectionsData.filter(i => 
+        i.status === 'completed' && i.inspection_type === 'exit'
+      );
       
-      // Buscar a última vistoria de SAÍDA concluída (não entrada)
-      const latestExitInspection = inspectionsData
-        .filter(i => i.status === 'completed' && i.inspection_type === 'exit')
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
-      
-      console.log('Dashboard Debug - Última vistoria de saída:', latestExitInspection);
-      
-      if (latestExitInspection) {
-        // Buscar fotos apenas dessa vistoria de saída
-        const latestInspectionPhotos = photosData.filter(photo => photo.inspection_id === latestExitInspection.id);
+      if (exitInspections.length > 0) {
+        // Pegar a mais recente
+        const latestExitInspection = exitInspections
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
         
-        console.log('Dashboard Debug - Fotos da última vistoria de saída:', latestInspectionPhotos.length);
-        latestInspectionPhotos.forEach(photo => {
-          // Verificar se é analysis_result ou ai_analysis_result
-          const analysisData = photo.analysis_result || photo.ai_analysis_result;
-          console.log('Dashboard Debug - Dados da análise:', analysisData);
-          
-          if (analysisData?.objectsDetected) {
-            analysisData.objectsDetected.forEach((obj: any) => {
-              console.log('Dashboard Debug - Objeto:', obj);
+        // Buscar fotos dessa vistoria
+        const exitPhotos = photosData.filter(photo => 
+          photo.inspection_id === latestExitInspection.id
+        );
+        
+        // Contar itens faltando nessas fotos
+        exitPhotos.forEach(photo => {
+          const analysisResult = photo.ai_analysis_result || photo.analysis_result;
+          if (analysisResult?.objectsDetected) {
+            analysisResult.objectsDetected.forEach((obj: any) => {
               if (obj.condition === 'not_found') {
                 criticalIssuesCount++;
-                console.log('Dashboard Debug - Item faltando encontrado:', obj.item);
               }
             });
           }
         });
-        
-        console.log('Dashboard Debug - Total final de itens faltando:', criticalIssuesCount);
       }
 
       const dashboardStats: DashboardStats = {

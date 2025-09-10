@@ -50,6 +50,7 @@ A React/TypeScript application for property inspections with Supabase backend in
   - **Fixed new items photo display**: Enhanced "Itens Novos na Saída" to show entry photo for context instead of "Sem foto" - now shows before/after comparison
   - **Removed visual markers from comparative reports**: Removed red pins due to positioning issues - interface now focuses on clear text-based comparison without visual markers
   - **Fixed dashboard missing items count**: Corrected logic to count items from latest EXIT inspection only (not entry) to match comparative report numbers
+  - **Fixed field naming**: Corrected Dashboard to use 'inspection_type' instead of 'type' field to match database schema
 
 ## Previous Changes (2025-09-09)
 - Configured Vite server for Replit environment (host: 0.0.0.0, port: 5000)
