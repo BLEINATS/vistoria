@@ -340,8 +340,12 @@ const Inspection: React.FC = () => {
     }
   };
 
-  const handleSaveObservations = async () => {
-    if (!inspectionId) return;
+  const handleSaveObservations = useCallback(async () => {
+    if (!inspectionId) {
+      console.log('handleSaveObservations: No inspectionId');
+      return;
+    }
+    console.log('handleSaveObservations: Saving observations...', { inspectionId, observationsLength: generalObservations?.length || 0 });
     setIsSavingObservations(true);
     setObservationsSaved(false);
 
@@ -351,13 +355,15 @@ const Inspection: React.FC = () => {
       .eq('id', inspectionId);
 
     if (error) {
+      console.error('handleSaveObservations: Error saving observations', error);
       addToast('Falha ao salvar observações.', 'error');
     } else {
+      console.log('handleSaveObservations: Observations saved successfully');
       setObservationsSaved(true);
       setTimeout(() => setObservationsSaved(false), 2000);
     }
     setIsSavingObservations(false);
-  };
+  }, [inspectionId, generalObservations, addToast]);
 
 
   const handleAddCustomRoom = () => {
@@ -461,21 +467,38 @@ const Inspection: React.FC = () => {
   };
 
   const handleBackNavigation = useCallback(async () => {
+    console.log('handleBackNavigation called:', {
+      inspectionId,
+      photosLength: photos.length,
+      inspectionType,
+      hasObservations: generalObservations?.length > 0
+    });
+    
     if (inspectionId) {
       // Save observations and any pending data before leaving
+      console.log('Saving observations before navigation...');
       await handleSaveObservations();
       
       // Update inspection status to indicate it was saved (but not necessarily completed)
       if (photos.length > 0) {
-        await supabase
+        console.log('Updating inspection status to in-progress...');
+        const { error } = await supabase
           .from('inspections')
           .update({ status: 'in-progress' })
           .eq('id', inspectionId);
+          
+        if (error) {
+          console.error('Error updating inspection status:', error);
+        } else {
+          console.log('Inspection status updated successfully');
+        }
       }
+    } else {
+      console.warn('No inspectionId found, skipping save');
     }
     
     navigate(`/property/${property.id}`);
-  }, [inspectionId, photos.length, property.id, navigate]);
+  }, [inspectionId, photos.length, property.id, navigate, inspectionType, generalObservations]);
 
   const generateReport = async () => {
     if (photos.length === 0) {
