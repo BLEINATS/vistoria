@@ -12,8 +12,6 @@ import {
   EyeOff,
   CheckCircle,
   AlertTriangle,
-  Phone,
-  Building,
   Camera,
   X
 } from 'lucide-react';
@@ -82,18 +80,17 @@ const Profile: React.FC = () => {
     };
     
     try {
-      // Carregar todos os campos do perfil após restart do workflow
+      // Carregar apenas campos que EXISTEM na tabela real
       const { data: basicData } = await supabase
         .from('profiles')
-        .select('full_name, phone, company, avatar_url')
+        .select('full_name, avatar_url')
         .eq('id', user.id)
         .single();
 
       if (basicData) {
         baseProfileInfo.fullName = basicData.full_name || '';
-        baseProfileInfo.phone = basicData.phone || '';
-        baseProfileInfo.company = basicData.company || '';
         baseProfileInfo.avatarUrl = basicData.avatar_url || '';
+        // Phone e company ficam vazios pois não existem na tabela
       }
 
       setProfileData(baseProfileInfo);
@@ -115,15 +112,13 @@ const Profile: React.FC = () => {
       console.log('Starting profile update for user:', user?.id);
       console.log('Profile data:', profileData);
 
-      // Atualizar TODOS os campos do perfil
+      // Atualizar APENAS campos que existem na tabela real
       const updateData = {
         full_name: profileData.fullName || '',
-        phone: profileData.phone || '',
-        company: profileData.company || '',
         avatar_url: profileData.avatarUrl || ''
       };
 
-      console.log('Sending all profile data:', updateData);
+      console.log('Sending only existing fields:', updateData);
 
       const { data, error: profileError } = await supabase
         .from('profiles')
@@ -387,37 +382,7 @@ const Profile: React.FC = () => {
                 </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Telefone
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="tel"
-                    value={profileData.phone}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="(11) 99999-9999"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Empresa
-                </label>
-                <div className="relative">
-                  <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={profileData.company}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, company: e.target.value }))}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Nome da empresa"
-                  />
-                </div>
-              </div>
+              {/* Campos telefone e empresa removidos pois não existem na tabela real do Supabase */}
             </div>
 
             <div className="flex justify-end">
