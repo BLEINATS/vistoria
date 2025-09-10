@@ -4,10 +4,13 @@ import { motion } from 'framer-motion';
 import PropertyCard from '../components/Properties/PropertyCard';
 import PropertyForm, { PropertyFormData } from '../components/Properties/PropertyForm';
 import ConfirmationModal from '../components/common/ConfirmationModal';
+import PlanLimitGuard from '../components/Subscription/PlanLimitGuard';
+import UsageIndicator from '../components/Subscription/UsageIndicator';
 import { Property } from '../types';
 import { useNavigate } from 'react-router-dom';
 import { supabase, mapToProperty } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useSubscription } from '../hooks/useSubscription';
 
 const Properties: React.FC = () => {
   const [properties, setProperties] = useState<Property[]>([]);
@@ -19,6 +22,7 @@ const Properties: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { updateUsage } = useSubscription();
 
   const fetchProperties = useCallback(async () => {
     if (!user) return;
@@ -116,6 +120,10 @@ const Properties: React.FC = () => {
     } else {
       const { error } = await supabase.from('properties').insert(dbData);
       if (error) console.error('Error creating property:', error);
+      else {
+        // Update usage tracking for new property
+        await updateUsage('properties', 1);
+      }
     }
 
     fetchProperties();
@@ -222,13 +230,25 @@ const Properties: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Gerencie seus imóveis e vistorias</p>
         </div>
-        <button
-          onClick={handleOpenFormForCreate}
-          className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Novo Imóvel
-        </button>
+        <PlanLimitGuard action="create_property">
+          <button
+            onClick={handleOpenFormForCreate}
+            className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Novo Imóvel
+          </button>
+        </PlanLimitGuard>
+      </div>
+
+      {/* Usage Indicators */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+          <UsageIndicator type="properties" />
+        </div>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+          <UsageIndicator type="environments" />
+        </div>
       </div>
 
       <div className="relative">
@@ -261,13 +281,15 @@ const Properties: React.FC = () => {
             }
           </p>
           {!searchTerm && (
-            <button
-              onClick={handleOpenFormForCreate}
-              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Cadastrar Primeiro Imóvel
-            </button>
+            <PlanLimitGuard action="create_property">
+              <button
+                onClick={handleOpenFormForCreate}
+                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Cadastrar Primeiro Imóvel
+              </button>
+            </PlanLimitGuard>
           )}
         </div>
       ) : (

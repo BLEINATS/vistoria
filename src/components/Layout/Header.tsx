@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, Camera, LogOut, User, Home, Settings, ChevronDown, KeyRound } from 'lucide-react';
+import { LayoutDashboard, Camera, LogOut, User, Home, Settings, ChevronDown, KeyRound, CreditCard } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../../contexts/AuthContext';
@@ -145,6 +145,15 @@ const Header: React.FC = () => {
                   >
                     <KeyRound className="w-4 h-4 mr-3" />
                     Alterar Senha
+                  </Link>
+                  
+                  <Link
+                    to="/subscription"
+                    onClick={() => setShowUserMenu(false)}
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    <CreditCard className="w-4 h-4 mr-3" />
+                    Planos e Assinatura
                   </Link>
                   
                   <div className="border-t border-gray-200 dark:border-slate-700 my-1"></div>

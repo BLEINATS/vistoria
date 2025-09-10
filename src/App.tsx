@@ -7,6 +7,7 @@ import Reports from './pages/Reports';
 import PropertyDetail from './pages/PropertyDetail';
 import CompareInspections from './pages/CompareInspections';
 import Profile from './pages/Profile';
+import Subscription from './pages/Subscription';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -35,6 +36,7 @@ function App() {
               <Route path="/reports" element={<Reports />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/profile/:section" element={<Profile />} />
+              <Route path="/subscription" element={<Subscription />} />
               <Route path="/compare/:entryInspectionId/:exitInspectionId" element={<CompareInspections />} />
             </Route>
           </Route>
