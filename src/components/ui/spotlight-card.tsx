@@ -94,6 +94,9 @@ const GlowCard: React.FC<GlowCardProps> = ({
   };
 
   const getInlineStyles = (): React.CSSProperties => {
+    // Verificar se é mobile para simplificar o efeito
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+    
     const baseStyles: React.CSSProperties = {
       '--base': base,
       '--spread': spread,
@@ -106,20 +109,24 @@ const GlowCard: React.FC<GlowCardProps> = ({
       '--border-size': 'calc(var(--border, 2) * 1px)',
       '--spotlight-size': 'calc(var(--size, 150) * 1px)',
       '--hue': 'calc(var(--base) + (var(--xp, 0) * var(--spread, 0)))',
-      backgroundImage: `radial-gradient(
-        var(--spotlight-size) var(--spotlight-size) at
-        calc(var(--x, 0) * 1px)
-        calc(var(--y, 0) * 1px),
-        hsl(var(--hue, 210) calc(var(--saturation, 100) * 1%) calc(var(--lightness, 70) * 1%) / var(--bg-spot-opacity, 0.1)), transparent
-      )`,
       backgroundColor: 'var(--backdrop, transparent)',
-      backgroundSize: 'calc(100% + (2 * var(--border-size))) calc(100% + (2 * var(--border-size)))',
-      backgroundPosition: '50% 50%',
-      backgroundAttachment: 'fixed',
       border: 'var(--border-size) solid var(--backup-border)',
       position: 'relative',
       touchAction: 'pan-y pan-x', // Permite rolagem no mobile
     };
+
+    // No desktop, aplicar o efeito spotlight completo
+    if (!isMobile) {
+      baseStyles.backgroundImage = `radial-gradient(
+        var(--spotlight-size) var(--spotlight-size) at
+        calc(var(--x, 0) * 1px)
+        calc(var(--y, 0) * 1px),
+        hsl(var(--hue, 210) calc(var(--saturation, 100) * 1%) calc(var(--lightness, 70) * 1%) / var(--bg-spot-opacity, 0.1)), transparent
+      )`;
+      baseStyles.backgroundSize = 'calc(100% + (2 * var(--border-size))) calc(100% + (2 * var(--border-size)))';
+      baseStyles.backgroundPosition = '50% 50%';
+      baseStyles.backgroundAttachment = 'fixed';
+    }
 
     // Add width and height if provided
     if (width !== undefined) {
