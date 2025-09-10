@@ -5,14 +5,17 @@ import { useSubscriptionManagement } from '../hooks/useSubscriptionManagement';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { ArrowLeft, Check, CreditCard, FileText, Zap, Crown, Sparkles } from 'lucide-react';
+import PaymentModal from '../components/Subscription/PaymentModal';
 
 const Subscription: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { plans, userLimits, currentSubscription, loading, canPerformAction, getRemainingUsage } = useSubscription();
-  const { simulateUpgrade, loading: upgradeLoading } = useSubscriptionManagement();
+  const { plans, userLimits, loading, getRemainingUsage } = useSubscription();
+  const { createSubscription, simulateUpgrade, loading: upgradeLoading } = useSubscriptionManagement();
   const { addToast } = useToast();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [planToUpgrade, setPlanToUpgrade] = useState<any>(null);
 
   const handleUpgrade = async (planId: string) => {
     if (!user) return;
@@ -20,19 +23,46 @@ const Subscription: React.FC = () => {
     const plan = plans.find(p => p.id === planId);
     if (!plan) return;
     
-    setSelectedPlan(planId);
+    // For free plan, use direct upgrade
+    if (plan.price === 0) {
+      setSelectedPlan(planId);
+      const result = await simulateUpgrade(plan);
+      
+      if (result.success) {
+        addToast(result.message, 'success');
+        window.location.reload();
+      } else {
+        addToast(result.message, 'error');
+      }
+      
+      setSelectedPlan(null);
+      return;
+    }
+
+    // For paid plans, show payment modal
+    setPlanToUpgrade(plan);
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentConfirm = async (paymentMethod: 'PIX' | 'BOLETO' | 'CREDIT_CARD') => {
+    if (!planToUpgrade) return;
     
-    const result = await simulateUpgrade(plan);
+    const result = await createSubscription(planToUpgrade, paymentMethod);
     
     if (result.success) {
       addToast(result.message, 'success');
-      // Refresh page data
-      window.location.reload();
+      setShowPaymentModal(false);
+      setPlanToUpgrade(null);
+      // Optionally redirect to a success page or refresh
+      setTimeout(() => window.location.reload(), 2000);
     } else {
       addToast(result.message, 'error');
     }
-    
-    setSelectedPlan(null);
+  };
+
+  const handleClosePaymentModal = () => {
+    setShowPaymentModal(false);
+    setPlanToUpgrade(null);
   };
 
   const getPlanIcon = (planName: string) => {
@@ -306,6 +336,15 @@ const Subscription: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={handleClosePaymentModal}
+        plan={planToUpgrade}
+        onConfirm={handlePaymentConfirm}
+        loading={upgradeLoading}
+      />
     </div>
   );
 };
