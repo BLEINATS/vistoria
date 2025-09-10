@@ -57,6 +57,12 @@ A React/TypeScript application for property inspections with Supabase backend in
   - **Renamed quick action**: Changed "Nova Vistoria" to "Última Vistoria" and updated to redirect to Property Management page of latest property
   - **Renamed quick action**: Changed "Relatórios" to "Último Relatórios" - continues directing to latest comparative report
   - **Fixed "Último Relatórios" redirection**: Corrected Dashboard query to include inspections data and fixed logic to properly detect properties with completed entry and exit inspections, ensuring the quick action redirects to the correct comparative report
+  - **🤖 MAJOR AI CONSISTENCY IMPROVEMENTS**: Implemented comprehensive solution for AI analysis inconsistencies
+    - **Duplicate image detection**: Added smart detection for when same image is used in entry/exit
+    - **Conservative analysis mode**: For duplicate images, system now copies entry analysis instead of re-analyzing
+    - **Enhanced prompts**: Added specific instructions for consistent AI analysis with conservative comparison mode
+    - **Image seed generation**: Implemented deterministic seed based on image URL for reproducible results
+    - **Intelligent fallbacks**: System prioritizes consistency over fresh analysis when images are identical
 
 ## Previous Changes (2025-09-09)
 - Configured Vite server for Replit environment (host: 0.0.0.0, port: 5000)
