@@ -30,6 +30,11 @@ A React/TypeScript application for property inspections with Supabase backend in
 - ✅ Added profile configuration page with personal information editing
 - ✅ Implemented secure password change functionality
 - ✅ Enhanced user experience with profile dropdown and settings access
+- ✅ **Extended profile system with additional fields and photo upload**
+  - Added phone and company fields to database and interface
+  - Implemented photo upload functionality with Supabase Storage
+  - Added avatar preview, validation (5MB, image types only)
+  - Enhanced profile form with new fields and photo management
 
 ## Previous Changes (2025-09-09)
 - Configured Vite server for Replit environment (host: 0.0.0.0, port: 5000)
