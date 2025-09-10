@@ -511,33 +511,55 @@ const Inspection: React.FC = () => {
   }, [inspectionId, photos.length, property.id, navigate, inspectionType, generalObservations, addToast]);
 
   const generateReport = async () => {
+    console.log('📊 generateReport called:', {
+      inspectionId,
+      photosLength: photos.length,
+      inspectionType,
+      currentStatus: inspectionStatus
+    });
+    
     if (photos.length === 0) {
       addToast('Adicione pelo menos uma foto para gerar o relatório', 'error');
       return;
     }
-    if (!inspectionId) return;
-  
-    await handleSaveObservations(); // Ensure latest observations are saved
-
-    const { error } = await supabase
-      .from('inspections')
-      .update({ status: 'completed' })
-      .eq('id', inspectionId)
-      .select()
-      .single();
-  
-    if (error) {
-      console.error('Error finalizing inspection:', error);
-      addToast(`Falha ao finalizar a vistoria: ${error.message}`, 'error');
+    if (!inspectionId) {
+      console.error('❌ No inspectionId found');
       return;
     }
+  
+    try {
+      console.log('💾 Saving observations before generating report...');
+      await handleSaveObservations(); // Ensure latest observations are saved
+
+      console.log('📝 Updating inspection status to completed...');
+      const { data, error } = await supabase
+        .from('inspections')
+        .update({ status: 'completed' })
+        .eq('id', inspectionId)
+        .select()
+        .single();
     
-    // Update local status to reflect the change
-    setInspectionStatus('completed');
-    
-    navigate('/reports', { 
-      state: { inspectionId } 
-    });
+      if (error) {
+        console.error('❌ Error finalizing inspection:', error);
+        addToast(`Falha ao finalizar a vistoria: ${error.message}`, 'error');
+        return;
+      }
+      
+      console.log('✅ Inspection status updated to completed:', data);
+      
+      // Update local status to reflect the change
+      setInspectionStatus('completed');
+      console.log('🔄 Local status updated to completed');
+      
+      addToast('Relatório gerado com sucesso!', 'success');
+      
+      navigate('/reports', { 
+        state: { inspectionId } 
+      });
+    } catch (error) {
+      console.error('💥 Error in generateReport:', error);
+      addToast('Erro ao gerar relatório. Tente novamente.', 'error');
+    }
   };
 
   if (loading) {
