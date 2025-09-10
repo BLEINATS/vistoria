@@ -58,7 +58,42 @@ const PhotoWithMarkers: React.FC<PhotoWithMarkersProps> = ({
         >
           <img src={imageUrl} alt={label} className="w-full h-full object-contain" />
           
-          {/* Marcadores visuais removidos para melhor experiência */}
+          {/* Marcadores visuais para sinalizar mudanças no relatório comparativo */}
+          {(detectedObject?.markerCoordinates || (missingObject?.markerCoordinates && showMissingMarker)) && (
+            <div 
+              className="absolute pointer-events-none z-10"
+              style={{ 
+                left: `${(detectedObject?.markerCoordinates || missingObject?.markerCoordinates)!.x}%`, 
+                top: `${(detectedObject?.markerCoordinates || missingObject?.markerCoordinates)!.y}%`, 
+                transform: 'translate(-50%, -100%)' 
+              }}
+              title={(detectedObject || missingObject)?.item}
+            >
+              <div className="relative">
+                {showMissingMarker ? (
+                  // Red marker with X for missing items  
+                  <>
+                    <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                      <span className="text-white text-xs font-bold">✕</span>
+                    </div>
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded whitespace-nowrap">
+                      Faltando
+                    </div>
+                  </>
+                ) : (
+                  // Red marker for detected changes
+                  <>
+                    <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                      <span className="text-white text-xs font-bold">!</span>
+                    </div>
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded whitespace-nowrap">
+                      Detectado
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
           
           
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
