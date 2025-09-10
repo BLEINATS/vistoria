@@ -20,7 +20,14 @@ A React/TypeScript application for property inspections with Supabase backend in
 - ✅ Deployment configuration set up (autoscale with build/serve)
 - ✅ Host blocking issue resolved
 
-## Recent Changes (2025-09-09)
+## Recent Changes (2025-09-10)
+- ✅ Created comprehensive Dashboard with real-time analytics and visual charts
+- ✅ Implemented automatic marker coordinates system for AI object detection
+- ✅ Added Dashboard route and updated navigation structure
+- ✅ Fixed navigation back button in comparative reports
+- ✅ Separated Dashboard and Properties pages for better UX
+
+## Previous Changes (2025-09-09)
 - Configured Vite server for Replit environment (host: 0.0.0.0, port: 5000)
 - Installed dependencies with legacy peer deps to resolve echarts version conflict
 - Set up development workflow and deployment configuration
