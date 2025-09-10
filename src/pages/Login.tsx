@@ -18,17 +18,10 @@ const Login: React.FC = () => {
 
   // Redirect to dashboard if user is already authenticated
   useEffect(() => {
-    console.log('🔍 Login useEffect:', { 
-      hasUser: !!user, 
-      authLoading, 
-      loginLoading: loading 
-    });
-    
     if (user && !authLoading) {
-      console.log('🚀 User authenticated, redirecting to dashboard now!');
       navigate('/dashboard', { replace: true });
     }
-  }, [user, authLoading, navigate, loading]);
+  }, [user, authLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,17 +29,12 @@ const Login: React.FC = () => {
     setError(null);
 
     try {
-      console.log('Attempting login with:', { email });
-      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      console.log('Login response:', { user: data?.user?.id, error: error?.message });
-
       if (error) {
-        console.error('Login failed:', error);
         if (error.message.includes('Invalid login credentials') || error.code === 'invalid_credentials') {
           setError('Email ou senha incorretos. Se você acabou de se cadastrar, verifique seu email para confirmar a conta.');
         } else {
@@ -54,9 +42,6 @@ const Login: React.FC = () => {
         }
         setLoading(false);
       } else {
-        console.log('✅ Login successful, user authenticated:', data?.user?.id);
-        // Don't redirect here - let the useEffect handle redirection when user state updates
-        console.log('🔄 Login completed, AuthContext will handle redirection...');
         setLoading(false);
       }
     } catch (err) {

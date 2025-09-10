@@ -23,9 +23,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    console.log('🔍 fetchProfile: Iniciando busca do perfil para userId:', userId);
     try {
-      // Add a timeout to prevent infinite hanging
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Profile fetch timeout')), 5000);
       });
@@ -38,49 +36,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
       
-      console.log('📊 fetchProfile: Resultado da busca:', { data, error });
-      
-      if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
-        console.warn('⚠️ fetchProfile: Erro na busca, usando perfil vazio:', error);
+      if (error && error.code !== 'PGRST116') {
         setProfile(null);
       } else {
-        console.log('✅ fetchProfile: Perfil encontrado:', data);
         setProfile(data ?? null);
       }
     } catch (e) {
-      console.warn("⚠️ fetchProfile: Erro inesperado, continuando sem perfil:", e);
       setProfile(null);
     }
-    console.log('🏁 fetchProfile: Finalizando busca do perfil');
   }, []);
 
   useEffect(() => {
     const getSession = async () => {
-      console.log('🔍 AuthContext: Iniciando getSession...');
       try {
-        const { data, error } = await supabase.auth.getSession();
-        console.log('📊 AuthContext: getSession resultado:', { 
-          hasSession: !!data.session,
-          userId: data.session?.user?.id,
-          error 
-        });
+        const { data } = await supabase.auth.getSession();
         
         const currentUser = data.session?.user ?? null;
         setSession(data.session);
         setUser(currentUser);
         
         if (currentUser) {
-          console.log('✅ AuthContext: Usuário encontrado, buscando perfil...');
           await fetchProfile(currentUser.id);
-          console.log('📝 AuthContext: Perfil carregado, finalizando loading');
         } else {
-          console.log('❌ AuthContext: Nenhum usuário encontrado');
           setProfile(null);
         }
       } catch (err) {
-        console.error('💥 AuthContext: Erro no getSession:', err);
+        console.error('Error getting session:', err);
       } finally {
-        console.log('🏁 AuthContext: Finalizando loading');
         setLoading(false);
       }
     };
@@ -89,29 +71,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        console.log(`🔄 AuthContext: onAuthStateChange - ${event}`, {
-          hasSession: !!newSession,
-          userId: newSession?.user?.id
-        });
+        // Only process SIGNED_IN, SIGNED_OUT, and TOKEN_REFRESHED events
+        if (!['SIGNED_IN', 'SIGNED_OUT', 'TOKEN_REFRESHED'].includes(event)) {
+          return;
+        }
         
         const currentUser = newSession?.user ?? null;
+        const currentUserId = user?.id;
+        
+        // Skip if user is the same (prevents loops)
+        if (currentUser?.id === currentUserId && event !== 'TOKEN_REFRESHED') {
+          return;
+        }
+        
         setSession(newSession);
         setUser(currentUser);
         
         if (currentUser) {
-          console.log('✅ AuthContext: Usuário autenticado, buscando perfil...');
           try {
             await fetchProfile(currentUser.id);
-            console.log('📝 AuthContext: Perfil carregado com sucesso');
           } catch (error) {
-            console.warn('⚠️ AuthContext: Erro ao buscar perfil, continuando sem perfil:', error);
             setProfile(null);
           }
         } else {
-          console.log('❌ AuthContext: Usuário deslogado');
           setProfile(null);
         }
-        console.log('🏁 AuthContext: Estado atualizado, setLoading(false)');
         setLoading(false);
       }
     );
