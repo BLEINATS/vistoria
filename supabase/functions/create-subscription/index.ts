@@ -164,19 +164,16 @@ serve(async (req) => {
 
     const asaasSubscription: AsaasSubscription = await subscriptionResponse.json()
 
-    // Store subscription in our database
-    const { error: dbError } = await supabase
-      .from('subscriptions')
-      .upsert({
-        user_id: user.id,
-        plan_name: plans.name,
-        price: plans.price,
-        asaas_subscription_id: asaasSubscription.id,
-        asaas_customer_id: asaasCustomer.id,
-        status: 'PENDING',
-        billing_type: paymentMethod,
-        updated_at: new Date().toISOString(),
-      })
+    // Store subscription in our database using RPC function (avoids cache issues)
+    const { error: dbError } = await supabase.rpc('create_user_subscription', {
+      user_uuid: user.id,
+      plan_name_param: plans.name,
+      price_param: plans.price,
+      asaas_subscription_id_param: asaasSubscription.id,
+      asaas_customer_id_param: asaasCustomer.id,
+      status_param: 'PENDING',
+      billing_type_param: paymentMethod
+    })
 
     if (dbError) {
       console.error('Database error:', dbError)

@@ -212,7 +212,7 @@ export const useSubscription = () => {
     };
   }, [user]);
 
-  // Fetch current user subscription from database
+  // Fetch current user subscription - using localStorage temporarily due to Supabase cache issues
   const fetchCurrentSubscription = useCallback(async () => {
     if (!user) {
       setCurrentSubscription(null);
@@ -220,32 +220,38 @@ export const useSubscription = () => {
     }
     
     try {
-      // Fetch active subscription from database
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-      
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching subscription:', error);
-        // If user has no active subscription, default to Gratuito (free plan)
-        setCurrentSubscription(null);
-        return;
+      // TEMPORARY: Use localStorage until Supabase cache issues are resolved
+      // Try to get from localStorage first (for recent subscriptions)
+      const stored = localStorage.getItem('vistoria_subscription');
+      if (stored) {
+        try {
+          const data = JSON.parse(stored);
+          if (data.user_id === user.id && data.status === 'active') {
+            // Convert localStorage format to subscription format
+            setCurrentSubscription({
+              id: data.id || 1,
+              user_id: data.user_id,
+              plan_name: data.plan_name,
+              price: data.price,
+              asaas_subscription_id: data.asaas_subscription_id || null,
+              asaas_customer_id: data.asaas_customer_id || null,
+              status: data.status,
+              billing_type: data.billing_type || 'CREDIT_CARD',
+              created_at: data.created_at || new Date().toISOString(),
+              updated_at: data.updated_at || new Date().toISOString()
+            });
+            return;
+          }
+        } catch (e) {
+          console.warn('Invalid subscription data in localStorage:', e);
+        }
       }
       
-      if (data) {
-        setCurrentSubscription(data);
-      } else {
-        // No active subscription found, user is on free plan
-        setCurrentSubscription(null);
-      }
+      // No valid subscription found, user is on free plan
+      setCurrentSubscription(null);
       
     } catch (error) {
-      console.error('Unexpected error fetching subscription:', error);
+      console.error('Error fetching subscription:', error);
       setCurrentSubscription(null);
     }
   }, [user]);
