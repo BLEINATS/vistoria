@@ -121,9 +121,11 @@ const Profile: React.FC = () => {
 
       console.log('Update data:', updateData);
 
+      // Usar UPDATE direto ao invés de upsert para evitar problemas de RLS
       const { data, error: profileError } = await supabase
         .from('profiles')
-        .upsert(updateData)
+        .update({ full_name: profileData.fullName || '' })
+        .eq('id', user!.id)
         .select();
 
       console.log('Supabase response:', { data, profileError });
