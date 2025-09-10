@@ -270,7 +270,22 @@ const CompareInspections: React.FC = () => {
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between no-print">
-        <button onClick={() => navigate(-1)} className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 sm:mb-0">
+        <button 
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🔙 Botão voltar clicado');
+            try {
+              navigate(-1);
+            } catch (error) {
+              console.log('⚠️ Erro na navegação, tentando alternativa...', error);
+              // Alternativa: navegar para lista de propriedades
+              navigate('/properties');
+            }
+          }} 
+          className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 sm:mb-0 cursor-pointer transition-colors"
+          type="button"
+        >
           <ArrowLeft className="w-5 h-5 mr-2" />
           Voltar
         </button>
