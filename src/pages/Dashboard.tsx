@@ -165,24 +165,32 @@ const Dashboard: React.FC = () => {
       // Conta apenas itens faltando da última vistoria
       let criticalIssuesCount = 0;
       
-      // Buscar a última vistoria (mais recente)
-      const latestInspection = inspectionsData
-        .filter(i => i.status === 'completed')
+      // Buscar a última vistoria de SAÍDA concluída (não entrada)
+      const latestExitInspection = inspectionsData
+        .filter(i => i.status === 'completed' && i.type === 'exit')
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
       
-      if (latestInspection) {
-        // Buscar fotos apenas dessa vistoria
-        const latestInspectionPhotos = photosData.filter(photo => photo.inspection_id === latestInspection.id);
+      if (latestExitInspection) {
+        // Buscar fotos apenas dessa vistoria de saída
+        const latestInspectionPhotos = photosData.filter(photo => photo.inspection_id === latestExitInspection.id);
+        
+        console.log('Dashboard - Última vistoria de saída:', latestExitInspection.id);
+        console.log('Dashboard - Fotos da última vistoria:', latestInspectionPhotos.length);
         
         latestInspectionPhotos.forEach(photo => {
           if (photo.analysis_result?.objectsDetected) {
             photo.analysis_result.objectsDetected.forEach((obj: any) => {
               if (obj.condition === 'not_found') {
                 criticalIssuesCount++;
+                console.log('Dashboard - Item faltando encontrado:', obj.item);
               }
             });
           }
         });
+        
+        console.log('Dashboard - Total de itens faltando:', criticalIssuesCount);
+      } else {
+        console.log('Dashboard - Nenhuma vistoria de saída concluída encontrada');
       }
 
       const dashboardStats: DashboardStats = {
