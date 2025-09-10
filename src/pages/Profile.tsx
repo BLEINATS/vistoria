@@ -11,13 +11,21 @@ import {
   Eye, 
   EyeOff,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  Phone,
+  Building,
+  Camera,
+  Upload,
+  X
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface ProfileData {
   fullName: string;
   email: string;
+  phone: string;
+  company: string;
+  avatarUrl: string;
 }
 
 interface PasswordData {
@@ -33,7 +41,10 @@ const Profile: React.FC = () => {
   
   const [profileData, setProfileData] = useState<ProfileData>({
     fullName: '',
-    email: ''
+    email: '',
+    phone: '',
+    company: '',
+    avatarUrl: ''
   });
   
   const [passwordData, setPasswordData] = useState<PasswordData>({
@@ -49,6 +60,8 @@ const Profile: React.FC = () => {
     new: false,
     confirm: false
   });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>('');
 
   const isPasswordSection = section === 'password';
 
@@ -64,7 +77,7 @@ const Profile: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name')
+        .select('full_name, phone, company, avatar_url')
         .eq('id', user.id)
         .single();
 
@@ -73,10 +86,16 @@ const Profile: React.FC = () => {
         return;
       }
 
-      setProfileData({
+      const profileInfo = {
         fullName: data?.full_name || '',
-        email: user.email || ''
-      });
+        email: user.email || '',
+        phone: data?.phone || '',
+        company: data?.company || '',
+        avatarUrl: data?.avatar_url || ''
+      };
+
+      setProfileData(profileInfo);
+      setAvatarPreview(profileInfo.avatarUrl);
     } catch (error) {
       console.error('Error fetching profile data:', error);
     }
@@ -88,16 +107,48 @@ const Profile: React.FC = () => {
     setMessage(null);
 
     try {
+      let avatarUrl = profileData.avatarUrl;
+
+      // Upload avatar if a new file was selected
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${user!.id}/avatar.${fileExt}`;
+
+        // Upload to Supabase storage
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, avatarFile, { upsert: true });
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+        } else {
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(fileName);
+          
+          avatarUrl = publicUrl;
+        }
+      }
+
       // Update profile in profiles table
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert({
           id: user!.id,
           full_name: profileData.fullName,
+          phone: profileData.phone,
+          company: profileData.company,
+          avatar_url: avatarUrl,
           updated_at: new Date().toISOString()
         });
 
       if (profileError) throw profileError;
+
+      // Update local state
+      setProfileData(prev => ({ ...prev, avatarUrl }));
+      setAvatarPreview(avatarUrl);
+      setAvatarFile(null);
 
       setMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' });
     } catch (error: any) {
@@ -166,6 +217,38 @@ const Profile: React.FC = () => {
       ...prev,
       [field]: !prev[field]
     }));
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setMessage({ type: 'error', text: 'Por favor, selecione apenas arquivos de imagem' });
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setMessage({ type: 'error', text: 'A imagem deve ter no máximo 5MB' });
+        return;
+      }
+
+      setAvatarFile(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setAvatarPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeAvatar = () => {
+    setAvatarFile(null);
+    setAvatarPreview('');
+    setProfileData(prev => ({ ...prev, avatarUrl: '' }));
   };
 
   return (
