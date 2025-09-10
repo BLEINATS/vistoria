@@ -69,6 +69,12 @@ A React/TypeScript application for property inspections with Supabase backend in
     - **Inventory-focused analysis**: Prioritized tangible, countable objects over construction finishes
     - **Detailed object specifications**: Enhanced detection to include material, color, and condition details
     - **Priority hierarchies**: Structured object detection by importance (furniture > appliances > accessories > installations)
+    - **🔄 STANDARDIZED ANALYSIS CRITERIA**: Fixed inconsistencies between entry and exit inspections
+      - **Unified nomenclature**: Both entry and exit now use identical object naming conventions
+      - **Consistent materials**: Standardized material detection (tecido, madeira, metal, vidro, cerâmica, couro, plástico)
+      - **Consistent colors**: Standardized color palette (branco, preto, cinza, marrom, bege, azul, verde, vermelho, amarelo)
+      - **Same detection logic**: Both analyses use identical criteria to prevent false differences
+      - **Reference-based comparison**: Exit analysis now references entry inventory for consistency
 
 ## Previous Changes (2025-09-09)
 - Configured Vite server for Replit environment (host: 0.0.0.0, port: 5000)

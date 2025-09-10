@@ -98,9 +98,23 @@ const getRealAIAnalysis = async (
       imageSeed,
       isDuplicateImage,
       consistencyMode: entryObjects ? 'comparison' : 'initial',
+      // Padronize instructions for both entry and exit to ensure consistency
+      standardDetectionInstructions: `DETECÇÃO PADRONIZADA DE OBJETOS: Analise esta imagem sendo EXTREMAMENTE CONSISTENTE na identificação de objetos. 
+
+CRITÉRIOS OBRIGATÓRIOS:
+1. NOMENCLATURA: Use nomes específicos e padronizados (ex: "sofá", "mesa de centro", "televisão", "geladeira")
+2. MATERIAL: Seja preciso (tecido, madeira, metal, vidro, cerâmica, couro, plástico)
+3. COR: Use cores básicas consistentes (branco, preto, cinza, marrom, bege, azul, verde, vermelho, amarelo)
+4. CONDIÇÃO: excellent/good/fair/poor baseado no estado visual do objeto
+5. DETECÇÃO: Identifique TODOS os objetos móveis, eletrodomésticos, utensílios e acessórios
+
+${roomInstructions}
+
+IMPORTANTE: Mantenha CONSISTÊNCIA total entre análises - mesmo objeto deve ter SEMPRE o mesmo nome, material e cor em análises diferentes.`,
+
       analysisInstructions: entryObjects 
-        ? `DETECÇÃO PRIORITÁRIA DE OBJETOS: Analise esta imagem de SAÍDA e compare com os objetos da ENTRADA fornecidos. ${isDuplicateImage ? 'CRÍTICO: Esta parece ser a mesma imagem da entrada. Seja EXTREMAMENTE conservador - só reporte diferenças se tiver 100% de certeza.' : 'Seja MUITO assertivo na detecção de objetos. Foque em: 1) OBJETOS PRINCIPAIS vs entrada 2) O QUE MUDOU vs entrada 3) O QUE ESTÁ FALTANDO vs entrada. Priorize objetos tangíveis sobre acabamentos.'} ${roomInstructions}`
-        : `DETECÇÃO COMPLETA DE OBJETOS: Analise esta imagem de ENTRADA sendo EXTREMAMENTE DETALHISTA na identificação de TODOS os objetos visíveis. SEJA ASSERTIVO E PRECISO. ${roomInstructions} IMPORTANTE: Detecte CADA objeto visível com material e cor específicos. Foque em OBJETOS INVENTARIÁVEIS que podem ser contados, medidos e avaliados. Priorize móveis, eletrodomésticos, utensílios e acessórios sobre acabamentos construtivos.`
+        ? `ANÁLISE DE SAÍDA: Esta é uma vistoria de SAÍDA. Analise os objetos usando EXATAMENTE os mesmos critérios da entrada. ${isDuplicateImage ? 'CRÍTICO: Esta parece ser a mesma imagem da entrada. Seja EXTREMAMENTE conservador - só reporte diferenças se tiver 100% de certeza.' : 'Compare com os objetos da entrada fornecidos e detecte: 1) Objetos presentes com MESMA nomenclatura/material/cor 2) Objetos com condição alterada 3) Objetos não encontrados (condition: not_found) 4) Objetos novos não presentes na entrada. MANTENHA consistência na nomenclatura!'}`
+        : `ANÁLISE DE ENTRADA: Esta é uma vistoria de ENTRADA. Crie o inventário base que será usado para comparação futura. Seja MUITO preciso na nomenclatura, material e cor pois isso será a referência para a vistoria de saída.`
     },
   });
 
