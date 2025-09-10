@@ -83,35 +83,35 @@ const Profile: React.FC = () => {
     };
     
     try {
-      // Fetch all profile data at once since columns exist
-      const { data, error } = await supabase
+      // First try to fetch basic fields that should exist
+      const { data: basicData, error: basicError } = await supabase
         .from('profiles')
-        .select('full_name, phone, company, avatar_url')
+        .select('full_name, avatar_url')
         .eq('id', user.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        console.error('Error fetching profile:', error);
-        // Even if profile fetch fails, show user email
-        setProfileData(baseProfileInfo);
-        return;
+      if (basicData) {
+        baseProfileInfo.fullName = basicData.full_name || '';
+        baseProfileInfo.avatarUrl = basicData.avatar_url || '';
       }
 
-      // Update with fetched data or keep defaults
-      const profileInfo = {
-        fullName: data?.full_name || '',
-        email: user.email || '',
-        phone: data?.phone || '',
-        company: data?.company || '',
-        avatarUrl: data?.avatar_url || ''
-      };
+      // Use raw SQL for extended fields to bypass cache issues
+      const { data: extendedData } = await supabase.rpc('get_profile_extended', {
+        profile_id: user.id
+      });
 
-      setProfileData(profileInfo);
-      setAvatarPreview(profileInfo.avatarUrl);
+      if (extendedData && extendedData.length > 0) {
+        const extended = extendedData[0];
+        baseProfileInfo.phone = extended.phone || '';
+        baseProfileInfo.company = extended.company || '';
+      }
+
+      setProfileData(baseProfileInfo);
+      setAvatarPreview(baseProfileInfo.avatarUrl);
 
     } catch (error) {
       console.error('Error fetching profile data:', error);
-      // Even if profile fetch fails, show user email
+      // Always show user email even if everything fails
       setProfileData(baseProfileInfo);
     }
   };
@@ -146,17 +146,14 @@ const Profile: React.FC = () => {
         }
       }
 
-      // Update profile in profiles table
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user!.id,
-          full_name: profileData.fullName,
-          phone: profileData.phone,
-          company: profileData.company,
-          avatar_url: avatarUrl,
-          updated_at: new Date().toISOString()
-        });
+      // Update profile using RPC to bypass cache issues
+      const { error: profileError } = await supabase.rpc('update_profile_complete', {
+        profile_id: user!.id,
+        full_name: profileData.fullName,
+        phone_number: profileData.phone,
+        company_name: profileData.company,
+        avatar_url: avatarUrl
+      });
 
       if (profileError) throw profileError;
 
