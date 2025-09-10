@@ -59,7 +59,6 @@ const Profile: React.FC = () => {
     new: false,
     confirm: false
   });
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>('');
 
   const isPasswordSection = section === 'password';
@@ -111,48 +110,33 @@ const Profile: React.FC = () => {
     setMessage(null);
 
     try {
-      let avatarUrl = profileData.avatarUrl;
+      console.log('Starting profile update for user:', user?.id);
+      console.log('Profile data:', profileData);
 
-      // Upload avatar if a new file was selected
-      if (avatarFile) {
-        const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `${user!.id}/avatar.${fileExt}`;
+      // Primeiro, tentar uma operação muito simples
+      const updateData = {
+        id: user!.id,
+        full_name: profileData.fullName || '',
+      };
 
-        // Upload to Supabase storage
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(fileName, avatarFile, { upsert: true });
+      console.log('Update data:', updateData);
 
-        if (uploadError) {
-          console.error('Upload error:', uploadError);
-        } else {
-          // Get public URL
-          const { data: { publicUrl } } = supabase.storage
-            .from('avatars')
-            .getPublicUrl(fileName);
-          
-          avatarUrl = publicUrl;
-        }
+      const { data, error: profileError } = await supabase
+        .from('profiles')
+        .upsert(updateData)
+        .select();
+
+      console.log('Supabase response:', { data, profileError });
+
+      if (profileError) {
+        console.error('Profile update error:', profileError);
+        throw profileError;
       }
-
-      // Use RPC function to bypass RLS issues completely
-      const { error: profileError } = await supabase.rpc('upsert_user_profile', {
-        user_id: user!.id,
-        user_full_name: profileData.fullName,
-        user_avatar_url: avatarUrl
-      });
-
-      if (profileError) throw profileError;
-
-      // Update local state
-      setProfileData(prev => ({ ...prev, avatarUrl }));
-      setAvatarPreview(avatarUrl);
-      setAvatarFile(null);
 
       setMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' });
     } catch (error: any) {
       console.error('Error updating profile:', error);
-      setMessage({ type: 'error', text: error.message || 'Erro ao atualizar perfil' });
+      setMessage({ type: 'error', text: error?.message || 'Erro ao atualizar perfil' });
     } finally {
       setLoading(false);
     }
