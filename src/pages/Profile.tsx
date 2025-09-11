@@ -17,7 +17,6 @@ import {
   Loader,
   Building
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import ImageUploadSetting from '../components/Settings/ImageUploadSetting';
 
 interface ProfileData {
@@ -83,7 +82,7 @@ const Profile: React.FC = () => {
       setProfileData({
         fullName: profile.full_name || '',
         email: user.email || '',
-        companyName: profile.company_name || '',
+        companyName: profile.company || '',
         avatarUrl: profile.avatar_url || '',
         avatarFile: null,
       });
@@ -151,7 +150,7 @@ const Profile: React.FC = () => {
 
       const updateData = {
         full_name: profileData.fullName,
-        company_name: profileData.companyName,
+        company: profileData.companyName,
         avatar_url: newAvatarUrl,
       };
 
