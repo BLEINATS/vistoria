@@ -82,7 +82,7 @@ const Profile: React.FC = () => {
       setProfileData({
         fullName: profile.full_name || '',
         email: user.email || '',
-        companyName: profile.company || '',
+        companyName: '', // Temporário - campo não disponível no momento
         avatarUrl: profile.avatar_url || '',
         avatarFile: null,
       });
@@ -150,7 +150,6 @@ const Profile: React.FC = () => {
 
       const updateData = {
         full_name: profileData.fullName,
-        company: profileData.companyName,
         avatar_url: newAvatarUrl,
       };
 

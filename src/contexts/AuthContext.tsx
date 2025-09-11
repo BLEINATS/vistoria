@@ -4,8 +4,6 @@ import { Session, User } from '@supabase/supabase-js';
 
 interface Profile {
   full_name: string | null;
-  phone: string | null;
-  company: string | null;
   avatar_url: string | null;
 }
 
@@ -34,7 +32,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       const queryPromise = supabase
         .from('profiles')
-        .select('full_name, phone, company, avatar_url')
+        .select('full_name, avatar_url')
         .eq('id', userId)
         .single();
       
