@@ -32,6 +32,11 @@ A React/TypeScript application for property inspections with Supabase backend in
   - Changed serve script from `-p 5000` to `-l tcp://0.0.0.0:5000` for proper external access
   - Confirmed health check endpoint now responds correctly for deployment system
   - Production Server workflow running successfully with proper network binding
+- ✅ **Switched to Vite native preview for better deployment compatibility**: Resolved deployment system compatibility issues
+  - Replaced custom serve command with official `vite preview --host 0.0.0.0 --port 5000`
+  - Added `npm run start` script using Vite's native production preview server
+  - Vite preview provides standard HTTP headers and better Replit deployment system compatibility
+  - Health check endpoint confirmed working with proper HTTP/1.1 200 OK responses
 
 ## Recent Changes (2025-09-10)
 - ✅ Created comprehensive Dashboard with real-time analytics and visual charts
