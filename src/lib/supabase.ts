@@ -58,6 +58,7 @@ export type Database = {
           id: string;
           full_name: string | null;
           avatar_url: string | null;
+          company_name: string | null;
         };
         Insert: Omit<Database['public']['Tables']['profiles']['Row'], 'id'>;
         Update: Partial<Database['public']['Tables']['profiles']['Row']>;
@@ -78,16 +79,10 @@ export type Database = {
           description: string | null;
           facade_photo_url: string | null;
           user_id: string;
-          inspections: {
-            id: string;
-            status: 'pending' | 'in-progress' | 'completed';
-            inspection_type: 'entry' | 'exit';
-            created_at: string;
-            photoCount: number;
-          }[] | null;
-          profiles: {
-            full_name: string;
-          } | null;
+          responsible_name: string;
+          company_name: string;
+          company_logo_url: string;
+          inspections: jsonb;
         }[];
       };
       get_property_details_by_id: {
@@ -101,16 +96,10 @@ export type Database = {
           description: string | null;
           facade_photo_url: string | null;
           user_id: string;
-          inspections: {
-            id: string;
-            status: 'pending' | 'in-progress' | 'completed';
-            inspection_type: 'entry' | 'exit';
-            created_at: string;
-            photoCount: number;
-          }[] | null;
-          profiles: {
-            full_name: string;
-          } | null;
+          responsible_name: string;
+          company_name: string;
+          company_logo_url: string;
+          inspections: jsonb;
         }[];
       };
     };
@@ -126,7 +115,7 @@ export type Database = {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Função para mapear do banco de dados para o tipo da aplicação
-export const mapToProperty = (row: any, responsibleName?: string | null): Property | null => {
+export const mapToProperty = (row: any): Property | null => {
   // Defensive check: if row is null or has no id, it's invalid data.
   if (!row || !row.id) {
     return null;
@@ -162,6 +151,8 @@ export const mapToProperty = (row: any, responsibleName?: string | null): Proper
     createdAt,
     inspections, // This is now guaranteed to be an array.
     user_id: row.user_id,
-    responsibleName: responsibleName || 'Não informado',
+    responsibleName: row.responsible_name || 'Não informado',
+    companyName: row.company_name || undefined,
+    companyLogoUrl: row.company_logo_url || undefined,
   };
 };

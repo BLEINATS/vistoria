@@ -7,78 +7,45 @@ import type { SubscriptionPlan } from '../types/subscription';
 export const useSubscriptionManagement = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   const createSubscription = async (
-    plan: SubscriptionPlan, 
+    plan: SubscriptionPlan,
     paymentMethod: 'PIX' | 'BOLETO' | 'CREDIT_CARD'
   ) => {
-    if (!user || !user.email || plan.price === 0) return { success: false, message: 'Dados inválidos' };
-    
+    if (!user || !user.email || plan.price === 0) {
+      return { success: false, message: 'Dados de usuário ou plano inválidos para criar uma assinatura paga.' };
+    }
+
     setLoading(true);
+    setSelectedPlan(plan.id);
     try {
-      // TEMPORARY: Mock subscription creation due to Supabase cache issues
-      // This simulates a real payment flow until cache issues are resolved
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Generate mock subscription ID
-      const subscriptionId = `SUB_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Create subscription data for localStorage
-      const subscriptionData = {
-        id: Math.floor(Math.random() * 1000) + 1,
-        user_id: user.id,
-        plan_name: plan.name,
-        price: plan.price,
-        asaas_subscription_id: subscriptionId,
-        asaas_customer_id: `CUST_${user.id.substr(0, 8)}`,
-        status: 'active',
-        billing_type: paymentMethod,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      // Save to localStorage
-      localStorage.setItem('vistoria_subscription', JSON.stringify(subscriptionData));
-      
-      // Trigger cross-tab synchronization
-      window.dispatchEvent(new CustomEvent('subscriptionUpdated', { detail: subscriptionData }));
-      
-      // Generate realistic payment details based on method
-      let paymentDetails = {};
-      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
-      
-      if (paymentMethod === 'PIX') {
-        paymentDetails = {
-          pixCode: `00020101021226800014br.gov.bcb.pix2558spi-hm.sejainteligente.com.br/pix/v2/cobv/${subscriptionId}5204000053039865802BR5925VistorIA Inspecoes Digitais6014SAO PAULO62070503***6304${Math.random().toString().substr(2, 4)}`,
-          qrCodeUrl: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HA${Math.random().toString().substr(2, 100)}`,
-        };
-      } else if (paymentMethod === 'BOLETO') {
-        paymentDetails = {
-          boletoUrl: `https://sandbox.asaas.com/b/pdf/${subscriptionId}`,
-        };
+      // Invoking the 'create-subscription' Edge Function which handles the Asaas integration
+      const { data, error } = await supabase.functions.invoke('create-subscription', {
+        body: {
+          planId: plan.id,
+          paymentMethod: paymentMethod,
+        },
+      });
+
+      if (error) {
+        console.error('Edge function invocation error:', error);
+        const errorMessage = (error as any).context?.error?.message || error.message || 'Falha ao criar a assinatura. Tente novamente.';
+        throw new Error(errorMessage);
       }
-      
-      return {
-        success: true,
-        message: `Assinatura ${plan.name} criada com sucesso!`,
-        subscriptionId,
-        paymentMethod,
-        // Payment details for different methods
-        ...paymentDetails,
-        invoiceUrl: `https://sandbox.asaas.com/i/${subscriptionId}`,
-        dueDate: tomorrow.toISOString().split('T')[0],
-      };
+
+      // The function's return value is in the 'data' property
+      return data;
 
     } catch (error) {
       console.error('Error creating subscription:', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Erro ao criar assinatura'
+        message: error instanceof Error ? error.message : 'Ocorreu um erro inesperado ao se comunicar com o serviço de pagamento.',
       };
     } finally {
       setLoading(false);
+      setSelectedPlan(null);
     }
   };
 
@@ -169,6 +136,7 @@ export const useSubscriptionManagement = () => {
     simulateUpgrade,
     getCurrentPlan,
     getPlanLimits,
-    loading
+    loading,
+    selectedPlan,
   };
 };

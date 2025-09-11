@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { 
   User, 
   Mail, 
@@ -10,19 +11,21 @@ import {
   ArrowLeft, 
   Eye, 
   EyeOff,
-  CheckCircle,
-  AlertTriangle,
   Camera,
-  X
+  X,
+  Image,
+  Loader,
+  Building
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import ImageUploadSetting from '../components/Settings/ImageUploadSetting';
 
 interface ProfileData {
   fullName: string;
   email: string;
-  phone: string;
-  company: string;
+  companyName: string;
   avatarUrl: string;
+  avatarFile?: File | null;
 }
 
 interface PasswordData {
@@ -34,14 +37,17 @@ interface PasswordData {
 const Profile: React.FC = () => {
   const navigate = useNavigate();
   const { section } = useParams();
-  const { user } = useAuth();
+  const { user, profile, refetchProfile } = useAuth();
+  const { addToast, updateToast } = useToast();
+  
+  const [activeSection, setActiveSection] = useState(section || 'personal');
   
   const [profileData, setProfileData] = useState<ProfileData>({
     fullName: '',
     email: '',
-    phone: '',
-    company: '',
-    avatarUrl: ''
+    companyName: '',
+    avatarUrl: '',
+    avatarFile: null,
   });
   
   const [passwordData, setPasswordData] = useState<PasswordData>({
@@ -50,8 +56,10 @@ const Profile: React.FC = () => {
     confirmPassword: ''
   });
   
+  const [landingPageSettings, setLandingPageSettings] = useState<any>({});
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [showPasswords, setShowPasswords] = useState({
     current: false,
     new: false,
@@ -59,469 +67,261 @@ const Profile: React.FC = () => {
   });
   const [avatarPreview, setAvatarPreview] = useState<string>('');
 
-  const isPasswordSection = section === 'password';
+  const isAdmin = user?.email === 'klaus@bleinat.com.br';
 
   useEffect(() => {
-    if (user) {
-      fetchProfileData();
+    const currentActiveSection = section || 'personal';
+    if (currentActiveSection === 'appearance' && !isAdmin) {
+      navigate('/profile/personal', { replace: true });
+    } else {
+      setActiveSection(currentActiveSection);
     }
-  }, [user]);
+  }, [section, isAdmin, navigate]);
 
-  const fetchProfileData = async () => {
-    if (!user) return;
-    
-    // Always set email from user auth data first
-    const baseProfileInfo = {
-      fullName: '',
-      email: user.email || '',
-      phone: '',
-      company: '',
-      avatarUrl: ''
-    };
-    
-    try {
-      console.log('Fetching profile for user:', user.id);
-      
-      // Carregar apenas campos que EXISTEM na tabela real
-      const { data: basicData, error } = await supabase
-        .from('profiles')
-        .select('full_name, avatar_url')
-        .eq('id', user.id)
-        .single();
-
-      console.log('Profile query result:', { basicData, error });
-
-      if (basicData && !error) {
-        baseProfileInfo.fullName = basicData.full_name || '';
-        baseProfileInfo.avatarUrl = basicData.avatar_url || '';
-        console.log('Profile loaded successfully:', basicData);
-      } else {
-        console.log('No profile data found or error occurred:', error);
-        // Se não existe, criar um registro básico
-        const { data: newProfile, error: insertError } = await supabase
-          .from('profiles')
-          .insert({ 
-            id: user.id, 
-            full_name: user.email?.split('@')[0] || 'Usuário',
-            avatar_url: '' 
-          })
-          .select()
-          .single();
-        
-        if (newProfile && !insertError) {
-          baseProfileInfo.fullName = newProfile.full_name || '';
-          baseProfileInfo.avatarUrl = newProfile.avatar_url || '';
-          console.log('Profile created successfully:', newProfile);
-        }
-      }
-
-      setProfileData(baseProfileInfo);
-      setAvatarPreview(baseProfileInfo.avatarUrl);
-
-    } catch (error) {
-      console.error('Error fetching profile data:', error);
-      // Always show user email even if everything fails
-      setProfileData(baseProfileInfo);
+  useEffect(() => {
+    if (user && profile) {
+      setProfileData({
+        fullName: profile.full_name || '',
+        email: user.email || '',
+        companyName: profile.company_name || '',
+        avatarUrl: profile.avatar_url || '',
+        avatarFile: null,
+      });
+      setAvatarPreview(profile.avatar_url || '');
     }
+    if (user && activeSection === 'appearance' && isAdmin) {
+      fetchLandingPageSettings();
+    }
+  }, [user, profile, activeSection, isAdmin]);
+
+  const fetchLandingPageSettings = async () => {
+    setSettingsLoading(true);
+    const { data, error } = await supabase.from('landing_page_settings').select('*');
+    if (error) {
+      console.error('Error fetching landing page settings:', error);
+    } else {
+      const settingsMap = data.reduce((acc, setting) => {
+        acc[setting.key] = { value: setting.value, description: setting.description };
+        return acc;
+      }, {});
+      setLandingPageSettings(settingsMap);
+    }
+    setSettingsLoading(false);
   };
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
+
     setLoading(true);
-    setMessage(null);
+    const toastId = addToast('Salvando perfil...', 'loading');
 
     try {
-      console.log('Starting profile update for user:', user?.id);
-      console.log('Profile data:', profileData);
+      let newAvatarUrl = profileData.avatarUrl;
 
-      // Atualizar APENAS campos que existem na tabela real
-      const updateData = {
-        full_name: profileData.fullName || '',
-        avatar_url: profileData.avatarUrl || ''
-      };
+      // Handle logo upload/removal
+      if (profileData.avatarFile) {
+        const file = profileData.avatarFile;
+        const filePath = `${user.id}/${Date.now()}_${file.name}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, file);
 
-      console.log('Sending only existing fields:', updateData);
+        if (uploadError) throw uploadError;
 
-      const { data, error: profileError } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('id', user!.id)
-        .select();
+        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+        newAvatarUrl = urlData.publicUrl;
 
-      console.log('Supabase response:', { data, profileError });
-
-      if (profileError) {
-        console.error('Profile update error:', profileError);
-        throw profileError;
+        // If there was an old avatar, delete it
+        if (profile?.avatar_url) {
+          const oldFilePath = profile.avatar_url.split('/avatars/').pop();
+          if (oldFilePath) {
+            await supabase.storage.from('avatars').remove([oldFilePath]);
+          }
+        }
+      } else if (!avatarPreview && profile?.avatar_url) {
+        // Handle avatar removal
+        const oldFilePath = profile.avatar_url.split('/avatars/').pop();
+        if (oldFilePath) {
+          await supabase.storage.from('avatars').remove([oldFilePath]);
+        }
+        newAvatarUrl = '';
       }
 
-      setMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' });
+      const updateData = {
+        full_name: profileData.fullName,
+        company_name: profileData.companyName,
+        avatar_url: newAvatarUrl,
+      };
+
+      const { error } = await supabase.from('profiles').update(updateData).eq('id', user.id);
+      if (error) throw error;
+      
+      updateToast(toastId, 'Perfil atualizado com sucesso!', 'success');
+      await refetchProfile();
     } catch (error: any) {
-      console.error('Error updating profile:', error);
-      setMessage({ type: 'error', text: error?.message || 'Erro ao atualizar perfil' });
+      updateToast(toastId, `Erro ao atualizar perfil: ${error.message}`, 'error');
     } finally {
       setLoading(false);
+      setProfileData(prev => ({...prev, avatarFile: null}));
     }
   };
 
   const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setMessage(null);
-
-    // Validate passwords
+    const toastId = addToast('Alterando senha...', 'loading');
+    
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setMessage({ type: 'error', text: 'As senhas não coincidem' });
+      updateToast(toastId, 'As senhas não coincidem', 'error');
       setLoading(false);
       return;
     }
-
     if (passwordData.newPassword.length < 6) {
-      setMessage({ type: 'error', text: 'A nova senha deve ter pelo menos 6 caracteres' });
+      updateToast(toastId, 'A nova senha deve ter pelo menos 6 caracteres', 'error');
       setLoading(false);
       return;
     }
-
-    if (passwordData.newPassword === passwordData.currentPassword) {
-      setMessage({ type: 'error', text: 'A nova senha deve ser diferente da senha atual' });
-      setLoading(false);
-      return;
-    }
-
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: passwordData.newPassword
-      });
-
+      const { error } = await supabase.auth.updateUser({ password: passwordData.newPassword });
       if (error) throw error;
-
-      setMessage({ type: 'success', text: 'Senha alterada com sucesso!' });
-      setPasswordData({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      });
+      updateToast(toastId, 'Senha alterada com sucesso!', 'success');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (error: any) {
-      console.error('Error updating password:', error);
-      
-      let errorMessage = 'Erro ao alterar senha';
-      if (error.code === 'same_password') {
-        errorMessage = 'A nova senha deve ser diferente da senha atual';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      setMessage({ type: 'error', text: errorMessage });
+      updateToast(toastId, `Erro ao alterar senha: ${error.message}`, 'error');
     } finally {
       setLoading(false);
     }
   };
-
-  const togglePasswordVisibility = (field: keyof typeof showPasswords) => {
-    setShowPasswords(prev => ({
-      ...prev,
-      [field]: !prev[field]
+  
+  const handleSettingUpdate = (key: string, newUrl: string) => {
+    setLandingPageSettings((prev: any) => ({
+        ...prev,
+        [key]: { ...prev[key], value: newUrl }
     }));
   };
 
+  const togglePasswordVisibility = (field: keyof typeof showPasswords) => setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
+  
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        setMessage({ type: 'error', text: 'Por favor, selecione apenas arquivos de imagem' });
-        return;
-      }
-
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setMessage({ type: 'error', text: 'A imagem deve ter no máximo 5MB' });
-        return;
-      }
-
-      // Create preview URL
+      if (!file.type.startsWith('image/')) { addToast('Por favor, selecione apenas arquivos de imagem', 'error'); return; }
+      if (file.size > 5 * 1024 * 1024) { addToast('A imagem deve ter no máximo 5MB', 'error'); return; }
+      
+      setProfileData(prev => ({ ...prev, avatarFile: file }));
+      
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setAvatarPreview(e.target?.result as string);
-      };
+      reader.onload = (e) => setAvatarPreview(e.target?.result as string);
       reader.readAsDataURL(file);
     }
   };
-
-  const removeAvatar = () => {
-    setAvatarPreview('');
-    setProfileData(prev => ({ ...prev, avatarUrl: '' }));
+  
+  const removeAvatar = () => { 
+    setAvatarPreview(''); 
+    setProfileData(prev => ({ ...prev, avatarUrl: '', avatarFile: null })); 
   };
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      {/* Header */}
       <div className="flex items-center space-x-4">
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-colors"
-        >
+        <button onClick={() => navigate('/dashboard')} className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-            {isPasswordSection ? 'Alterar Senha' : 'Configurações'}
-          </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            {isPasswordSection ? 'Altere sua senha de acesso' : 'Gerencie suas informações pessoais'}
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Configurações</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Gerencie suas informações e preferências</p>
         </div>
       </div>
 
-      {/* Message */}
-      {message && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`p-4 rounded-lg flex items-center space-x-3 ${
-            message.type === 'success' 
-              ? 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/20'
-              : 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/20'
-          }`}
-        >
-          {message.type === 'success' ? (
-            <CheckCircle className="w-5 h-5" />
-          ) : (
-            <AlertTriangle className="w-5 h-5" />
-          )}
-          <span>{message.text}</span>
-        </motion.div>
-      )}
-
-      {/* Tab Navigation */}
       <div className="border-b border-gray-200 dark:border-slate-700">
         <nav className="-mb-px flex space-x-8">
-          <button
-            onClick={() => navigate('/profile')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-              !isPasswordSection
-                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600'
-            }`}
-          >
-            <User className="w-4 h-4 inline mr-2" />
-            Informações Pessoais
+          <button onClick={() => navigate('/profile/personal')} className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeSection === 'personal' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600'}`}>
+            <User className="w-4 h-4 inline mr-2" />Informações Pessoais
           </button>
-          <button
-            onClick={() => navigate('/profile/password')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-              isPasswordSection
-                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600'
-            }`}
-          >
-            <KeyRound className="w-4 h-4 inline mr-2" />
-            Senha
+          <button onClick={() => navigate('/profile/password')} className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeSection === 'password' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600'}`}>
+            <KeyRound className="w-4 h-4 inline mr-2" />Senha
           </button>
+          {isAdmin && (
+            <button onClick={() => navigate('/profile/appearance')} className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeSection === 'appearance' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600'}`}>
+              <Image className="w-4 h-4 inline mr-2" />Aparência
+            </button>
+          )}
         </nav>
       </div>
 
-      {/* Content */}
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700">
-        {!isPasswordSection ? (
-          /* Profile Information Form */
+        {activeSection === 'personal' && (
           <form onSubmit={handleProfileUpdate} className="p-6 space-y-6">
-            {/* Avatar Upload Section */}
             <div className="flex flex-col items-center space-y-4 mb-8">
               <div className="relative">
-                {avatarPreview ? (
-                  <img
-                    src={avatarPreview}
-                    alt="Avatar"
-                    className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-slate-700 shadow-lg"
-                  />
-                ) : (
-                  <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-slate-700 flex items-center justify-center border-4 border-white dark:border-slate-700 shadow-lg">
-                    <User className="w-12 h-12 text-gray-400" />
-                  </div>
-                )}
-                
-                {avatarPreview && (
-                  <button
-                    type="button"
-                    onClick={removeAvatar}
-                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
+                {avatarPreview ? <img src={avatarPreview} alt="Logo da Empresa" className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-slate-700 shadow-lg" /> : <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-slate-700 flex items-center justify-center border-4 border-white dark:border-slate-700 shadow-lg"><Building className="w-12 h-12 text-gray-400" /></div>}
+                {avatarPreview && <button type="button" onClick={removeAvatar} className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 transition-colors"><X className="w-4 h-4" /></button>}
               </div>
-              
               <div className="flex flex-col items-center space-y-2">
                 <label className="cursor-pointer inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
-                  <Camera className="w-4 h-4 mr-2" />
-                  Alterar Foto
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                    className="hidden"
-                  />
+                  <Camera className="w-4 h-4 mr-2" />Logo da Empresa<input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
                 </label>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  JPG, PNG ou GIF. Máximo 5MB.
-                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">JPG, PNG ou GIF. Máximo 5MB.</p>
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Nome Completo
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={profileData.fullName}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, fullName: e.target.value }))}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Seu nome completo"
-                  />
-                </div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nome Completo (Vistoriador)</label>
+                <div className="relative"><User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" /><input type="text" value={profileData.fullName} onChange={(e) => setProfileData(prev => ({ ...prev, fullName: e.target.value }))} className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Seu nome completo" /></div>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Email
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="email"
-                    value={profileData.email}
-                    readOnly
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-600 text-gray-900 dark:text-gray-100 cursor-not-allowed"
-                  />
-                </div>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  O email não pode ser alterado
-                </p>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nome da Empresa</label>
+                <div className="relative"><Building className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" /><input type="text" value={profileData.companyName} onChange={(e) => setProfileData(prev => ({ ...prev, companyName: e.target.value }))} className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Nome da sua empresa" /></div>
               </div>
-
-              {/* Campos telefone e empresa removidos pois não existem na tabela real do Supabase */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
+                <div className="relative"><Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" /><input type="email" value={profileData.email} readOnly className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-600 text-gray-900 dark:text-gray-100 cursor-not-allowed" /></div>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">O email não pode ser alterado</p>
+              </div>
             </div>
-
             <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={loading}
-                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <Save className="w-5 h-5 mr-2" />
-                {loading ? 'Salvando...' : 'Salvar Alterações'}
-              </button>
+              <button type="submit" disabled={loading} className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><Save className="w-5 h-5 mr-2" />{loading ? 'Salvando...' : 'Salvar Alterações'}</button>
             </div>
           </form>
-        ) : (
-          /* Password Change Form */
+        )}
+        {activeSection === 'password' && (
           <form onSubmit={handlePasswordUpdate} className="p-6 space-y-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Senha Atual
-                </label>
-                <div className="relative">
-                  <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type={showPasswords.current ? 'text' : 'password'}
-                    value={passwordData.currentPassword}
-                    onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
-                    className="w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Digite sua senha atual"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => togglePasswordVisibility('current')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    {showPasswords.current ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Nova Senha
-                </label>
-                <div className="relative">
-                  <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type={showPasswords.new ? 'text' : 'password'}
-                    value={passwordData.newPassword}
-                    onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
-                    className="w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Digite a nova senha (mín. 6 caracteres)"
-                    minLength={6}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => togglePasswordVisibility('new')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    {showPasswords.new ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Confirmar Nova Senha
-                </label>
-                <div className="relative">
-                  <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type={showPasswords.confirm ? 'text' : 'password'}
-                    value={passwordData.confirmPassword}
-                    onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                    className="w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Confirme a nova senha"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => togglePasswordVisibility('confirm')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    {showPasswords.confirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nova Senha</label>
+              <div className="relative">
+                <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input type={showPasswords.new ? 'text' : 'password'} value={passwordData.newPassword} onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))} className="w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Mínimo 6 caracteres" />
+                <button type="button" onClick={() => togglePasswordVisibility('new')} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">{showPasswords.new ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button>
               </div>
             </div>
-
-            <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg p-4">
-              <div className="flex items-start space-x-3">
-                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
-                <div className="text-sm text-amber-700 dark:text-amber-400">
-                  <p className="font-medium">Dicas para uma senha segura:</p>
-                  <ul className="mt-1 list-disc list-inside space-y-1">
-                    <li>Use pelo menos 6 caracteres</li>
-                    <li>Combine letras maiúsculas e minúsculas</li>
-                    <li>Inclua números e símbolos</li>
-                    <li>Evite informações pessoais óbvias</li>
-                  </ul>
-                </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirmar Nova Senha</label>
+              <div className="relative">
+                <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input type={showPasswords.confirm ? 'text' : 'password'} value={passwordData.confirmPassword} onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))} className="w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Repita a nova senha" />
+                <button type="button" onClick={() => togglePasswordVisibility('confirm')} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">{showPasswords.confirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button>
               </div>
             </div>
-
             <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={loading}
-                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <KeyRound className="w-5 h-5 mr-2" />
-                {loading ? 'Alterando...' : 'Alterar Senha'}
-              </button>
+              <button type="submit" disabled={loading} className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><Save className="w-5 h-5 mr-2" />{loading ? 'Alterando...' : 'Alterar Senha'}</button>
             </div>
           </form>
+        )}
+        {activeSection === 'appearance' && isAdmin && (
+          <div className="p-6 space-y-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Gerenciar Imagens da Landing Page</h3>
+            {settingsLoading ? (
+              <div className="flex justify-center items-center py-10"><Loader className="w-8 h-8 animate-spin text-blue-500" /></div>
+            ) : (
+              <div className="space-y-4">
+                {Object.entries(landingPageSettings).map(([key, setting]: [string, any]) => (
+                  <ImageUploadSetting key={key} settingKey={key} label={setting.description || key.replace(/_/g, ' ')} currentImageUrl={setting.value} onUpdate={handleSettingUpdate} />
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

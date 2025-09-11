@@ -5,6 +5,7 @@ import { Session, User } from '@supabase/supabase-js';
 interface Profile {
   full_name: string | null;
   avatar_url: string | null;
+  company_name: string | null;
 }
 
 interface AuthContextType {
@@ -12,6 +13,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   profile: Profile | null;
+  refetchProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,17 +26,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 1500);
-      });
-      
-      const fetchPromise = supabase
+      const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, avatar_url')
+        .select('full_name, avatar_url, company_name')
         .eq('id', userId)
         .single();
-      
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
       
       if (error && error.code !== 'PGRST116') {
         setProfile(null);
@@ -46,11 +42,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
 
+  const refetchProfile = useCallback(async () => {
+    if (user) {
+      await fetchProfile(user.id);
+    }
+  }, [user, fetchProfile]);
+
   useEffect(() => {
     const getSession = async () => {
       try {
         const { data } = await supabase.auth.getSession();
-        
         const currentUser = data.session?.user ?? null;
         setSession(data.session);
         setUser(currentUser);
@@ -70,29 +71,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     getSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        // Only process SIGNED_IN, SIGNED_OUT, and TOKEN_REFRESHED events
-        if (!['SIGNED_IN', 'SIGNED_OUT', 'TOKEN_REFRESHED'].includes(event)) {
-          return;
-        }
-        
+      async (_event, newSession) => {
         const currentUser = newSession?.user ?? null;
-        const currentUserId = user?.id;
-        
-        // Skip if user is the same (prevents loops), but always process SIGNED_OUT
-        if (currentUser?.id === currentUserId && event !== 'TOKEN_REFRESHED' && event !== 'SIGNED_OUT') {
-          return;
-        }
-        
         setSession(newSession);
         setUser(currentUser);
         
         if (currentUser) {
-          try {
-            await fetchProfile(currentUser.id);
-          } catch (error) {
-            setProfile(null);
-          }
+          await fetchProfile(currentUser.id);
         } else {
           setProfile(null);
         }
@@ -110,6 +95,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     session,
     profile,
     loading,
+    refetchProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

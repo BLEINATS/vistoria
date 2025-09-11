@@ -9,6 +9,8 @@ export interface Property {
   inspections: InspectionSummary[];
   user_id: string;
   responsibleName?: string;
+  companyName?: string;
+  companyLogoUrl?: string;
 }
 
 export interface InspectionSummary {
