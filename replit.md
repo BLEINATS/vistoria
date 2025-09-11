@@ -20,6 +20,14 @@ A React/TypeScript application for property inspections with Supabase backend in
 - ✅ Deployment configuration set up (autoscale with build/serve)
 - ✅ Host blocking issue resolved
 
+## Recent Changes (2025-09-11)
+- ✅ **Fixed deployment health check issues**: Applied all suggested fixes for deployment failures
+  - Added production serve script to package.json with proper port configuration (port 5000)
+  - Built project to create dist folder with proper index.html health check endpoint
+  - Configured serve command with -s flag for proper SPA static file serving
+  - Set up Production Server workflow using npm run serve for deployment
+  - Verified health check endpoint responds correctly at / route
+
 ## Recent Changes (2025-09-10)
 - ✅ Created comprehensive Dashboard with real-time analytics and visual charts
 - ✅ Implemented automatic marker coordinates system for AI object detection
