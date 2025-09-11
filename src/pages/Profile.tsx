@@ -15,7 +15,8 @@ import {
   X,
   Image,
   Loader,
-  Building
+  Building,
+  Users
 } from 'lucide-react';
 import ImageUploadSetting from '../components/Settings/ImageUploadSetting';
 
@@ -58,6 +59,10 @@ const Profile: React.FC = () => {
   const [landingPageSettings, setLandingPageSettings] = useState<any>({});
   const [settingsLoading, setSettingsLoading] = useState(true);
   
+  // Estados para aba de usuários
+  const [users, setUsers] = useState<any[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  
   const [loading, setLoading] = useState(false);
   const [showPasswords, setShowPasswords] = useState({
     current: false,
@@ -70,7 +75,7 @@ const Profile: React.FC = () => {
 
   useEffect(() => {
     const currentActiveSection = section || 'personal';
-    if (currentActiveSection === 'appearance' && !isAdmin) {
+    if ((currentActiveSection === 'appearance' || currentActiveSection === 'users') && !isAdmin) {
       navigate('/profile/personal', { replace: true });
     } else {
       setActiveSection(currentActiveSection);
@@ -91,6 +96,9 @@ const Profile: React.FC = () => {
     if (user && activeSection === 'appearance' && isAdmin) {
       fetchLandingPageSettings();
     }
+    if (user && activeSection === 'users' && isAdmin) {
+      fetchUsers();
+    }
   }, [user, profile, activeSection, isAdmin]);
 
   const fetchLandingPageSettings = async () => {
@@ -106,6 +114,34 @@ const Profile: React.FC = () => {
       setLandingPageSettings(settingsMap);
     }
     setSettingsLoading(false);
+  };
+
+  const fetchUsers = async () => {
+    setUsersLoading(true);
+    try {
+      // Busca usuários com dados do auth.users e profiles
+      const { data: users, error } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          full_name,
+          company_name,
+          created_at,
+          avatar_url
+        `);
+      
+      if (error) {
+        console.error('Error fetching users:', error);
+        addToast('Erro ao carregar usuários', 'error');
+      } else {
+        setUsers(users || []);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      addToast('Erro ao carregar usuários', 'error');
+    } finally {
+      setUsersLoading(false);
+    }
   };
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
@@ -243,6 +279,11 @@ const Profile: React.FC = () => {
             <KeyRound className="w-4 h-4 inline mr-2" />Senha
           </button>
           {isAdmin && (
+            <button onClick={() => navigate('/profile/users')} className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeSection === 'users' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600'}`}>
+              <Users className="w-4 h-4 inline mr-2" />Usuários
+            </button>
+          )}
+          {isAdmin && (
             <button onClick={() => navigate('/profile/appearance')} className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeSection === 'appearance' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600'}`}>
               <Image className="w-4 h-4 inline mr-2" />Aparência
             </button>
@@ -307,6 +348,96 @@ const Profile: React.FC = () => {
               <button type="submit" disabled={loading} className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><Save className="w-5 h-5 mr-2" />{loading ? 'Alterando...' : 'Alterar Senha'}</button>
             </div>
           </form>
+        )}
+        {activeSection === 'users' && isAdmin && (
+          <div className="p-6 space-y-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Gerenciar Usuários</h3>
+            {usersLoading ? (
+              <div className="flex justify-center items-center py-10">
+                <Loader className="w-8 h-8 animate-spin text-blue-500" />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                  <thead className="bg-gray-50 dark:bg-slate-700">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Usuário
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Empresa
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Data de Registro
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Plano
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                    {users.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                          Nenhum usuário encontrado
+                        </td>
+                      </tr>
+                    ) : (
+                      users.map((userItem) => (
+                        <tr key={userItem.id} className="hover:bg-gray-50 dark:hover:bg-slate-700">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-10 w-10">
+                                {userItem.avatar_url ? (
+                                  <img className="h-10 w-10 rounded-full" src={userItem.avatar_url} alt="" />
+                                ) : (
+                                  <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-slate-600 flex items-center justify-center">
+                                    <User className="h-5 w-5 text-gray-400" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                  {userItem.full_name || 'Nome não informado'}
+                                </div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">
+                                  ID: {userItem.id.slice(0, 8)}...
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                            {userItem.company_name || 'Não informado'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {new Date(userItem.created_at).toLocaleDateString('pt-BR')}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200">
+                              Gratuito
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200">
+                              Ativo
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+                {users.length > 0 && (
+                  <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+                    Total de usuários cadastrados: {users.length}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         )}
         {activeSection === 'appearance' && isAdmin && (
           <div className="p-6 space-y-6">
