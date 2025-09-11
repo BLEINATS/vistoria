@@ -119,7 +119,7 @@ const Profile: React.FC = () => {
   const fetchUsers = async () => {
     setUsersLoading(true);
     try {
-      // Usar RPC segura para buscar usuários (validação admin server-side)
+      // Usar RPC segura para buscar usuários (sem parâmetros vulneráveis)
       const { data: users, error } = await supabase.rpc('get_admin_users');
       
       if (error) {
