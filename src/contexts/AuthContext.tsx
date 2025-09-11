@@ -5,7 +5,7 @@ import { Session, User } from '@supabase/supabase-js';
 interface Profile {
   full_name: string | null;
   avatar_url: string | null;
-  company_name: string | null;
+  company: string | null;
 }
 
 interface AuthContextType {
@@ -28,7 +28,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, avatar_url, company_name')
+        .select('full_name, avatar_url, company')
         .eq('id', userId)
         .single();
       
@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     getSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (_event, newSession) => {
+      async (event, newSession) => {
         const currentUser = newSession?.user ?? null;
         setSession(newSession);
         setUser(currentUser);
