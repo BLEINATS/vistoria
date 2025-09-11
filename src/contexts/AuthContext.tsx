@@ -5,7 +5,6 @@ import { Session, User } from '@supabase/supabase-js';
 interface Profile {
   full_name: string | null;
   avatar_url: string | null;
-  company: string | null;
 }
 
 interface AuthContextType {
@@ -28,7 +27,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, avatar_url, company')
+        .select('full_name, avatar_url')
         .eq('id', userId)
         .single();
       
