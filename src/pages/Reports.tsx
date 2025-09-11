@@ -42,8 +42,8 @@ const Reports: React.FC = () => {
 
     const userProfile = {
       inspectorName: profile?.full_name || user?.email || null,
-      companyName: profile?.company_name || null,
-      companyLogoUrl: profile?.company_logo_url || null,
+      companyName: reportData.property.companyName || profile?.company_name || null,
+      companyLogoUrl: reportData.property.companyLogoUrl || profile?.company_logo_url || null,
     };
 
     const printWindow = window.open('', '_blank');
@@ -247,8 +247,8 @@ const Reports: React.FC = () => {
 
       <div className="space-y-6 bg-white dark:bg-slate-900 p-4 sm:p-8 rounded-lg" id="report-content">
         <header className="text-center border-b border-gray-200 dark:border-slate-700 pb-6 mb-6">
-          {profile?.company_logo_url && (
-            <img src={profile.company_logo_url} alt="Logo da Empresa" className="h-16 w-auto mb-4 mx-auto" />
+          {reportData.property.companyLogoUrl && (
+            <img src={reportData.property.companyLogoUrl} alt="Logo da Empresa" className="h-16 w-auto mb-4 mx-auto" />
           )}
           <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Relatório de Vistoria - {inspectionTypeLabel}</h1>
           <p className="text-xl text-gray-600 dark:text-gray-400 mt-2">{reportData.property.name}</p>
@@ -257,7 +257,7 @@ const Reports: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm mb-6">
             <div className="text-gray-800 dark:text-gray-300">
                 <span className="font-semibold text-gray-500 dark:text-gray-400 mr-2">Empresa:</span>
-                {profile?.companyName || 'Não informado'}
+                {reportData.property.companyName || 'Não informado'}
             </div>
             <div className="text-gray-800 dark:text-gray-300">
                 <span className="font-semibold text-gray-500 dark:text-gray-400 mr-2">Vistoriador:</span>
