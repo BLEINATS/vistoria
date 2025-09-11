@@ -1,8 +1,11 @@
 import { InspectionPhoto, DetectedObject, Property } from '../types';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface FullInspectionData {
   property: Property;
   photos: InspectionPhoto[];
+  inspectionDate: Date;
 }
 
 interface UserProfile {
@@ -55,17 +58,17 @@ const getComparisonData = (room: string, entryData: FullInspectionData, exitData
     const changedItems = pairedItems.filter(p => p.entry.condition !== p.exit.condition);
     const unchangedItems = pairedItems.filter(p => p.entry.condition === p.exit.condition);
 
-    const missingItemsWithExitPhoto = missingItems.map(item => ({
-      ...item,
+    const missingItemsWithContext = missingItems.map(item => ({
+      entry: item,
       exitPhotoUrl: exitRoomPhoto
     }));
 
-    const newItemsWithEntryPhoto = newItems.map(item => ({
-      ...item,
+    const newItemsWithContext = newItems.map(item => ({
+      exit: item,
       entryPhotoUrl: entryRoomPhoto
     }));
 
-    return { changedItems, unchangedItems, newItems: newItemsWithEntryPhoto, missingItems: missingItemsWithExitPhoto };
+    return { changedItems, unchangedItems, newItems: newItemsWithContext, missingItems: missingItemsWithContext };
 };
 
 export const generateComparisonReportHTML = (
@@ -88,13 +91,13 @@ export const generateComparisonReportHTML = (
   allRooms.forEach(room => {
     const { changedItems, unchangedItems, newItems, missingItems } = getComparisonData(room, entryData, exitData);
     const roomConfig = reportConfig.rooms[room];
-    const entryPhoto = entryData.photos.find(p => p.room === room)?.url || 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/600x400/e2e8f0/4a5568?text=Sem+Foto';
-    const exitPhoto = exitData.photos.find(p => p.room === room)?.url || 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/600x400/e2e8f0/4a5568?text=Sem+Foto';
+    const entryPhoto = entryData.photos.find(p => p.room === room)?.url || 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/600x400/e2e8f0/4a5568?text=Sem+Foto';
+    const exitPhoto = exitData.photos.find(p => p.room === room)?.url || 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/600x400/e2e8f0/4a5568?text=Sem+Foto';
     
     let itemsHtml = '';
 
     if (roomConfig?.missingItems && missingItems.length > 0) {
-        const listItems = missingItems.map(item => `<li>${item.item} (${item.material}, ${item.color})</li>`).join('');
+        const listItems = missingItems.map(item => `<li>${item.entry.item} (${item.entry.material}, ${item.entry.color})</li>`).join('');
         itemsHtml += `
             <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
                 <h4 class="font-bold text-red-700">Itens Faltando na Saída</h4>
@@ -103,7 +106,7 @@ export const generateComparisonReportHTML = (
     }
 
     if (roomConfig?.newItems && newItems.length > 0) {
-        const listItems = newItems.map(item => `<li>${item.item} (${item.material}, ${item.color})</li>`).join('');
+        const listItems = newItems.map(item => `<li>${item.exit.item} (${item.exit.material}, ${item.exit.color})</li>`).join('');
         itemsHtml += `
             <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg">
                 <h4 class="font-bold text-green-700">Itens Novos na Saída</h4>
@@ -140,13 +143,13 @@ export const generateComparisonReportHTML = (
                 <div>
                     <h3 class="font-semibold text-lg text-center mb-2">Entrada</h3>
                     <div class="h-80 rounded-lg overflow-hidden border bg-gray-100">
-                        <img src="${entryPhoto}" alt="${room} na entrada" class="w-full h-full object-cover">
+                        <img src="${entryPhoto}" alt="${room} na entrada" class="w-full h-full object-contain">
                     </div>
                 </div>
                 <div>
                     <h3 class="font-semibold text-lg text-center mb-2">Saída</h3>
                     <div class="h-80 rounded-lg overflow-hidden border bg-gray-100">
-                        <img src="${exitPhoto}" alt="${room} na saída" class="w-full h-full object-cover">
+                        <img src="${exitPhoto}" alt="${room} na saída" class="w-full h-full object-contain">
                     </div>
                 </div>
             </div>
@@ -179,13 +182,24 @@ export const generateComparisonReportHTML = (
     <body class="p-4 md:p-8">
         <div class="report-page max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg">
             <header class="text-center border-b pb-6 mb-6">
-                ${userProfile.companyLogoUrl ? `<img src="${userProfile.companyLogoUrl}" alt="Logo da Empresa" class="h-16 w-auto mb-4 mx-auto">` : ''}
+                ${userProfile.companyLogoUrl ? `<img src="${userProfile.companyLogoUrl}" alt="Logo da Empresa" class="h-16 w-auto mb-4 mx-auto rounded-full">` : ''}
                 <h1 class="text-3xl font-bold text-gray-800">Relatório Comparativo de Vistorias</h1>
                 <p class="text-xl text-gray-600 mt-2">${entryData.property.name}</p>
             </header>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                 <div><p><strong>Empresa:</strong> ${userProfile.companyName || 'Não informado'}</p></div>
                 <div><p><strong>Vistoriador:</strong> ${userProfile.inspectorName || 'Não informado'}</p></div>
+                <div><p><strong>Endereço:</strong> ${entryData.property.address}</p></div>
+                <div><p><strong>Data da Entrada:</strong> ${format(entryData.inspectionDate, 'dd/MM/yyyy', { locale: ptBR })}</p></div>
+                <div><p><strong>Data da Saída:</strong> ${format(exitData.inspectionDate, 'dd/MM/yyyy', { locale: ptBR })}</p></div>
+            </div>
+            <div class="mt-6 border-t pt-6">
+                <h3 class="font-semibold text-lg text-gray-800 mb-2">Apontamentos da Vistoria</h3>
+                <p class="text-xs text-gray-600 leading-relaxed">
+                    O presente relatório tem como objetivo registrar o estado de conservação e funcionamento do imóvel na data da vistoria, em conformidade com a Lei nº 8.245/91 (Lei do Inquilinato).
+                    <br>A vistoria foi realizada por observação visual, avaliando aspectos estéticos, acabamentos e funcionamento aparente do imóvel.
+                    <br>Não são contemplados neste relatório: análises estruturais, fundações, solidez da construção ou eventuais vícios ocultos que não sejam perceptíveis no momento da vistoria.
+                </p>
             </div>
         </div>
         ${reportConfig.summary ? `

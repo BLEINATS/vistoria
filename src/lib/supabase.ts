@@ -58,7 +58,7 @@ export type Database = {
         Row: {
           id: string;
           full_name: string | null;
-          avatar_url: string | null;
+          company_logo_url: string | null;
           company_name: string | null;
         };
         Insert: Omit<Database['public']['Tables']['profiles']['Row'], 'id'>;

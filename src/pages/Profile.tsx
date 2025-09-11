@@ -88,10 +88,10 @@ const Profile: React.FC = () => {
         fullName: profile.full_name || '',
         email: user.email || '',
         companyName: profile.company_name || '',
-        avatarUrl: profile.avatar_url || '',
+        avatarUrl: profile.company_logo_url || '',
         avatarFile: null,
       });
-      setAvatarPreview(profile.avatar_url || '');
+      setAvatarPreview(profile.company_logo_url || '');
     }
     if (user && activeSection === 'appearance' && isAdmin) {
       fetchLandingPageSettings();
@@ -119,40 +119,35 @@ const Profile: React.FC = () => {
   const fetchUsers = async () => {
     setUsersLoading(true);
     try {
-      // Fallback: Buscar diretamente da tabela profiles como solução temporária
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, company, avatar_url, created_at');
+      const { data, error } = await supabase.rpc('get_all_users_with_details');
       
       if (error) {
-        console.error('Error fetching users:', error);
-        addToast('Erro ao carregar usuários', 'error');
-      } else {
-        // Transformar dados para o formato esperado pela UI
-        const transformedUsers = profiles?.map(profile => ({
-          id: profile.id,
-          full_name: profile.full_name || 'Nome não informado',
-          company_name: profile.company || 'Não informado',
-          email: profile.id === '3189b78e-bbed-427a-b0fa-b184a394ffba' 
-            ? 'klaus@bleinat.com.br' 
-            : 'user@example.com',
-          created_at: profile.created_at,
-          avatar_url: profile.avatar_url || '',
-          plan_tier: profile.id === '3189b78e-bbed-427a-b0fa-b184a394ffba' 
+        console.error('Error fetching users via RPC:', error);
+        addToast(`Erro ao carregar usuários: ${error.message}`, 'error');
+        setUsers([]);
+      } else if (data) {
+        const transformedUsers = data.map((user: any) => ({
+          id: user.id,
+          full_name: user.full_name || 'Nome não informado',
+          email: user.email || 'Email não disponível',
+          company_name: user.company_name || 'Não informado',
+          company_logo_url: user.company_logo_url || '',
+          plan_tier: user.id === '3189b78e-bbed-427a-b0fa-b184a394ffba' 
             ? 'Premium' 
             : 'Gratuito',
           is_active: true
-        })) || [];
-        
+        }));
         setUsers(transformedUsers);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching users:', error);
-      addToast('Erro ao carregar usuários', 'error');
+      addToast(`Erro ao carregar usuários: ${error.message}`, 'error');
+      setUsers([]);
     } finally {
       setUsersLoading(false);
     }
   };
+
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,7 +159,6 @@ const Profile: React.FC = () => {
     try {
       let newAvatarUrl = profileData.avatarUrl;
 
-      // Handle logo upload/removal
       if (profileData.avatarFile) {
         const file = profileData.avatarFile;
         const filePath = `${user.id}/${Date.now()}_${file.name}`;
@@ -178,16 +172,14 @@ const Profile: React.FC = () => {
         const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
         newAvatarUrl = urlData.publicUrl;
 
-        // If there was an old avatar, delete it
-        if (profile?.avatar_url) {
-          const oldFilePath = profile.avatar_url.split('/avatars/').pop();
+        if (profile?.company_logo_url) {
+          const oldFilePath = profile.company_logo_url.split('/avatars/').pop();
           if (oldFilePath) {
             await supabase.storage.from('avatars').remove([oldFilePath]);
           }
         }
-      } else if (!avatarPreview && profile?.avatar_url) {
-        // Handle avatar removal
-        const oldFilePath = profile.avatar_url.split('/avatars/').pop();
+      } else if (!avatarPreview && profile?.company_logo_url) {
+        const oldFilePath = profile.company_logo_url.split('/avatars/').pop();
         if (oldFilePath) {
           await supabase.storage.from('avatars').remove([oldFilePath]);
         }
@@ -197,7 +189,7 @@ const Profile: React.FC = () => {
       const updateData = {
         full_name: profileData.fullName,
         company_name: profileData.companyName,
-        avatar_url: newAvatarUrl,
+        company_logo_url: newAvatarUrl,
       };
 
       const { error } = await supabase.from('profiles').update(updateData).eq('id', user.id);
@@ -378,9 +370,6 @@ const Profile: React.FC = () => {
                         Empresa
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Data de Registro
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         Plano
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -391,7 +380,7 @@ const Profile: React.FC = () => {
                   <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                     {users.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                        <td colSpan={4} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                           Nenhum usuário encontrado
                         </td>
                       </tr>
@@ -401,8 +390,8 @@ const Profile: React.FC = () => {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-10 w-10">
-                                {userItem.avatar_url ? (
-                                  <img className="h-10 w-10 rounded-full" src={userItem.avatar_url} alt="" />
+                                {userItem.company_logo_url ? (
+                                  <img className="h-10 w-10 rounded-full" src={userItem.company_logo_url} alt="" />
                                 ) : (
                                   <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-slate-600 flex items-center justify-center">
                                     <User className="h-5 w-5 text-gray-400" />
@@ -421,9 +410,6 @@ const Profile: React.FC = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                             {userItem.company_name || 'Não informado'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                            {new Date(userItem.created_at).toLocaleDateString('pt-BR')}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200">

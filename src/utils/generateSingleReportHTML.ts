@@ -141,6 +141,14 @@ export const generateSingleReportHTML = (reportData: ReportData, userProfile: Us
                 <p class="text-sm text-gray-700 whitespace-pre-wrap">${reportData.general_observations}</p>
             </div>
             ` : ''}
+            <div class="mt-6 border-t pt-6">
+                <h3 class="font-semibold text-lg text-gray-800 mb-2">Apontamentos da Vistoria</h3>
+                <p class="text-xs text-gray-600 leading-relaxed">
+                    O presente relatório tem como objetivo registrar o estado de conservação e funcionamento do imóvel na data da vistoria, em conformidade com a Lei nº 8.245/91 (Lei do Inquilinato).
+                    <br>A vistoria foi realizada por observação visual, avaliando aspectos estéticos, acabamentos e funcionamento aparente do imóvel.
+                    <br>Não são contemplados neste relatório: análises estruturais, fundações, solidez da construção ou eventuais vícios ocultos que não sejam perceptíveis no momento da vistoria.
+                </p>
+            </div>
         </div>
         ${roomsHtml}
         <script>

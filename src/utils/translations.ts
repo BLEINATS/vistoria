@@ -1,5 +1,10 @@
 import { DetectedObject } from '../types';
 
+const capitalize = (s: string) => {
+  if (typeof s !== 'string' || !s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+};
+
 export const translateObjectCondition = (condition: string): string => {
   const translations: { [key: string]: string } = {
     new: 'Novo',
@@ -39,17 +44,19 @@ export const formatOptionalField = (field: string | null | undefined): string =>
   if (!isFieldValid(field)) {
     return 'Não informado';
   }
-  return field!;
+  return capitalize(field!);
 };
 
 export const formatObjectDescription = (object: DetectedObject): string => {
   const details = [
-    isFieldValid(object.material) ? object.material : null,
-    isFieldValid(object.color) ? object.color : null,
-  ].filter(Boolean); // Remove null/undefined values
+    isFieldValid(object.material) ? capitalize(object.material!) : null,
+    isFieldValid(object.color) ? capitalize(object.color!) : null,
+  ].filter(Boolean);
+
+  const itemName = capitalize(object.item);
 
   if (details.length > 0) {
-    return `${object.item} (${details.join(', ')})`;
+    return `${itemName} (${details.join(', ')})`;
   }
-  return object.item;
+  return itemName;
 };

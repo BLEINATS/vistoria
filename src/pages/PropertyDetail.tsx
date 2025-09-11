@@ -105,7 +105,7 @@ const PropertyDetail: React.FC = () => {
   };
 
   const handleViewReport = (inspectionId: string) => {
-    navigate('/reports', { state: { inspectionId } });
+    navigate(`/reports/${inspectionId}`);
   };
 
   const handleCompare = () => {

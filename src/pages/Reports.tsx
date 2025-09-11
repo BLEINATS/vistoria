@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Download, Printer, Share2, FileText, AlertTriangle, CheckCircle, Loader, ZoomIn, Palette, Shield, Wrench, LayoutGrid, Pencil, LogIn, LogOut, ArrowLeft } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Download, Printer, Share2, FileText, AlertTriangle, CheckCircle, Loader, ZoomIn, Palette, Shield, Wrench, LayoutGrid, Pencil, LogIn, LogOut, ArrowLeft, Home, Camera as CameraIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Property, InspectionPhoto } from '../types';
 import { supabase, mapToProperty } from '../lib/supabase';
 import ImageLightbox from '../components/common/ImageLightbox';
-import { translateObjectCondition, translateSeverity, translateRoomCondition, formatOptionalField, formatObjectDescription } from '../utils/translations';
+import { translateObjectCondition, translateSeverity, formatObjectDescription } from '../utils/translations';
 import { useAuth } from '../contexts/AuthContext';
 import { useReportActions } from '../hooks/useReportActions';
-import { getSeverityStyle } from '../utils/styleUtils';
+import { getSeverityStyle, getConditionStyle } from '../utils/styleUtils';
 import { generateSingleReportHTML } from '../utils/generateSingleReportHTML';
 import { useToast } from '../contexts/ToastContext';
 
@@ -22,11 +22,10 @@ interface ReportData {
 }
 
 const Reports: React.FC = () => {
-  const location = useLocation();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { addToast, updateToast } = useToast();
-  const { inspectionId } = location.state || {};
+  const { inspectionId } = useParams<{ inspectionId: string }>();
   
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,7 +43,7 @@ const Reports: React.FC = () => {
     const userProfile = {
       inspectorName: profile?.full_name || user?.email || null,
       companyName: profile?.company_name || null,
-      companyLogoUrl: profile?.avatar_url || null,
+      companyLogoUrl: profile?.company_logo_url || null,
     };
 
     const printWindow = window.open('', '_blank');
@@ -60,7 +59,6 @@ const Reports: React.FC = () => {
           
           printWindow.location.href = url;
 
-          // Cleanup the object URL after a short delay
           setTimeout(() => URL.revokeObjectURL(url), 10000);
 
           updateToast(toastId, 'Relatório pronto para impressão.', 'success');
@@ -204,29 +202,6 @@ const Reports: React.FC = () => {
     acc + (photo.analysisResult.objectsDetected?.filter(obj => obj.condition === 'not_found').length || 0), 0
   );
 
-  const criticalIssues = reportData.photos.reduce((acc, photo) => 
-    acc + (photo.analysisResult.issues?.filter(issue => 
-      issue.severity === 'critical' || issue.severity === 'high'
-    ).length || 0), 0
-  );
-
-  const averageCondition = reportData.photos.length > 0 ? reportData.photos.reduce((acc, photo) => {
-    const conditionScore = {
-      'excellent': 5,
-      'good': 4,
-      'fair': 3,
-      'poor': 2
-    };
-    return acc + (conditionScore[photo.analysisResult.roomCondition as keyof typeof conditionScore] || 3);
-  }, 0) / reportData.photos.length : 0;
-
-  const getConditionText = (score: number) => {
-    if (score >= 4.5) return 'Excelente';
-    if (score >= 3.5) return 'Bom';
-    if (score >= 2.5) return 'Regular';
-    return 'Precisa de atenção';
-  };
-
   const rooms = [...new Set(reportData.photos.map(p => p.room))];
   const inspectionTypeLabel = reportData.inspection_type === 'entry' ? 'Entrada' : 'Saída';
   const TypeIcon = reportData.inspection_type === 'entry' ? LogIn : LogOut;
@@ -270,8 +245,134 @@ const Reports: React.FC = () => {
         </div>
       </div>
 
-      <div className="space-y-6 bg-white dark:bg-slate-900 p-4 sm:p-8 rounded-lg">
-        {/* Report content */}
+      <div className="space-y-6 bg-white dark:bg-slate-900 p-4 sm:p-8 rounded-lg" id="report-content">
+        <header className="text-center border-b border-gray-200 dark:border-slate-700 pb-6 mb-6">
+          {profile?.company_logo_url && (
+            <img src={profile.company_logo_url} alt="Logo da Empresa" className="h-16 w-auto mb-4 mx-auto" />
+          )}
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Relatório de Vistoria - {inspectionTypeLabel}</h1>
+          <p className="text-xl text-gray-600 dark:text-gray-400 mt-2">{reportData.property.name}</p>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm mb-6">
+            <div className="text-gray-800 dark:text-gray-300">
+                <span className="font-semibold text-gray-500 dark:text-gray-400 mr-2">Empresa:</span>
+                {profile?.companyName || 'Não informado'}
+            </div>
+            <div className="text-gray-800 dark:text-gray-300">
+                <span className="font-semibold text-gray-500 dark:text-gray-400 mr-2">Vistoriador:</span>
+                {profile?.full_name || user?.email}
+            </div>
+            <div className="text-gray-800 dark:text-gray-300">
+                <span className="font-semibold text-gray-500 dark:text-gray-400 mr-2">Tipo do Imóvel:</span>
+                {getPropertyTypeLabel(reportData.property.type)}
+            </div>
+            <div className="text-gray-800 dark:text-gray-300">
+                <span className="font-semibold text-gray-500 dark:text-gray-400 mr-2">Endereço:</span>
+                {reportData.property.address}
+            </div>
+            <div className="text-gray-800 dark:text-gray-300">
+                <span className="font-semibold text-gray-500 dark:text-gray-400 mr-2">Data da Vistoria:</span>
+                {format(reportData.generatedAt, 'dd/MM/yyyy', { locale: ptBR })}
+            </div>
+        </div>
+
+        <div className="mt-6 border-t border-gray-200 dark:border-slate-700 pt-6">
+          <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-200 mb-2">Apontamentos da Vistoria</h3>
+          <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+            O presente relatório tem como objetivo registrar o estado de conservação e funcionamento do imóvel na data da vistoria, em conformidade com a Lei nº 8.245/91 (Lei do Inquilinato).
+            <br />A vistoria foi realizada por observação visual, avaliando aspectos estéticos, acabamentos e funcionamento aparente do imóvel.
+            <br />Não são contemplados neste relatório: análises estruturais, fundações, solidez da construção ou eventuais vícios ocultos que não sejam perceptíveis no momento da vistoria.
+          </p>
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div className="bg-gray-100 dark:bg-slate-800 p-4 rounded-lg">
+                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{rooms.length}</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ambientes</p>
+            </div>
+            <div className="bg-gray-100 dark:bg-slate-800 p-4 rounded-lg">
+                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{reportData.photos.length}</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Fotos</p>
+            </div>
+            <div className="bg-gray-100 dark:bg-slate-800 p-4 rounded-lg">
+                <p className="text-3xl font-bold text-red-600 dark:text-red-400">{totalIssues}</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Problemas</p>
+            </div>
+            <div className="bg-gray-100 dark:bg-slate-800 p-4 rounded-lg">
+                <p className="text-3xl font-bold text-orange-500 dark:text-orange-400">{totalMissingItems}</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Itens Faltando</p>
+            </div>
+        </div>
+
+        {rooms.map((roomName) => {
+          const roomPhotos = reportData.photos.filter(p => p.room === roomName);
+          return (
+            <div key={roomName} className="pt-8 mt-8 border-t border-gray-200 dark:border-slate-700">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">{roomName}</h2>
+              <div className="space-y-8">
+                {roomPhotos.map(photo => (
+                  <div key={photo.id} className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-800/50">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          <div 
+                              className="relative w-full h-80 rounded-lg overflow-hidden group bg-slate-100 dark:bg-slate-900/50 cursor-pointer"
+                              onClick={() => setLightboxImageUrl(photo.url)}
+                          >
+                              <img src={photo.url} alt={`Foto do ambiente ${photo.room}`} className="w-full h-full object-contain" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                  <ZoomIn className="w-8 h-8 text-white" />
+                              </div>
+                          </div>
+                          <div className="space-y-4">
+                              <div>
+                                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Descrição do Ambiente</h4>
+                                  <p className="text-sm text-gray-700 dark:text-gray-300">{photo.analysisResult.description}</p>
+                              </div>
+                              {photo.analysisResult.objectsDetected?.length > 0 && (
+                                  <div>
+                                      <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2 flex items-center"><LayoutGrid className="w-4 h-4 mr-2 text-gray-500" />Objetos Identificados</h4>
+                                      <div className="space-y-2">
+                                          {photo.analysisResult.objectsDetected.map(object => (
+                                              <div key={object.id} className="flex items-center justify-between text-sm p-2 bg-white dark:bg-slate-700 rounded-md">
+                                                  <span className="text-gray-800 dark:text-gray-200">{formatObjectDescription(object)}</span>
+                                                  <span className={`capitalize px-2 py-1 rounded-full text-xs font-medium ${getConditionStyle(object.condition)}`}>{translateObjectCondition(object.condition)}</span>
+                                              </div>
+                                          ))}
+                                      </div>
+                                  </div>
+                              )}
+                              {photo.analysisResult.issues?.length > 0 && (
+                                  <div>
+                                      <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2 flex items-center"><AlertTriangle className="w-4 h-4 mr-2 text-gray-500" />Problemas Identificados</h4>
+                                      <div className="space-y-2">
+                                          {photo.analysisResult.issues.map(issue => (
+                                              <div key={issue.id} className="p-3 border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20 rounded-md">
+                                                  <div className="flex items-center justify-between">
+                                                      <span className="font-medium text-sm text-gray-800 dark:text-gray-200">{issue.type}</span>
+                                                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityStyle(issue.severity)}`}>{translateSeverity(issue.severity)}</span>
+                                                  </div>
+                                                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{issue.description}</p>
+                                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Local: {issue.location}</p>
+                                              </div>
+                                          ))}
+                                      </div>
+                                  </div>
+                              )}
+                          </div>
+                      </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+
+        {reportData.general_observations && (
+          <div className="pt-8 mt-8 border-t border-gray-200 dark:border-slate-700">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">Observações Gerais</h2>
+            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{reportData.general_observations}</p>
+          </div>
+        )}
       </div>
       {lightboxImageUrl && (
         <ImageLightbox

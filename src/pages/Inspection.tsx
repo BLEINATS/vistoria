@@ -752,75 +752,27 @@ const Inspection: React.FC = () => {
   }, [inspectionId, photos.length, property.id, navigate, inspectionType, generalObservations, addToast]);
 
   const generateReport = async () => {
-    console.log('📊 generateReport called:', {
-      inspectionId,
-      photosLength: photos.length,
-      inspectionType,
-      currentStatus: inspectionStatus
-    });
-    
+    if (!inspectionId) return;
     if (photos.length === 0) {
       addToast('Adicione pelo menos uma foto para gerar o relatório', 'error');
       return;
     }
-    if (!inspectionId) {
-      console.error('❌ No inspectionId found');
+  
+    await handleSaveObservations();
+  
+    const { error } = await supabase
+      .from('inspections')
+      .update({ status: 'completed' })
+      .eq('id', inspectionId);
+  
+    if (error) {
+      addToast(`Falha ao finalizar a vistoria: ${error.message}`, 'error');
       return;
     }
   
-    try {
-      console.log('💾 Saving observations before generating report...');
-      await handleSaveObservations(); // Ensure latest observations are saved
-
-      console.log('📝 Updating inspection status to completed...');
-      const { data, error } = await supabase
-        .from('inspections')
-        .update({ status: 'completed' })
-        .eq('id', inspectionId)
-        .select()
-        .single();
-    
-      if (error) {
-        console.error('❌ Error finalizing inspection:', error);
-        addToast(`Falha ao finalizar a vistoria: ${error.message}`, 'error');
-        return;
-      }
-      
-      console.log('✅ Inspection status updated to completed:', data);
-      
-      // Double-check: verify the update worked
-      console.log('🔍 Verifying update by fetching inspection again...');
-      const { data: verifyData, error: verifyError } = await supabase
-        .from('inspections')
-        .select('status')
-        .eq('id', inspectionId)
-        .single();
-        
-      if (verifyError) {
-        console.error('❌ Error verifying update:', verifyError);
-      } else {
-        console.log('✅ Verification - Current status in DB:', verifyData.status);
-        if (verifyData.status !== 'completed') {
-          console.error('⚠️ WARNING: Status in DB is not completed!', verifyData.status);
-          addToast('Erro: Status não foi salvo corretamente', 'error');
-          return;
-        }
-      }
-      
-      // Update local status to reflect the change
-      setInspectionStatus('completed');
-      console.log('🔄 Local status updated to completed');
-      
-      addToast('Relatório gerado com sucesso!', 'success');
-      
-      console.log('🚀 Navigating to reports page with inspectionId:', inspectionId);
-      navigate('/reports', { 
-        state: { inspectionId } 
-      });
-    } catch (error) {
-      console.error('💥 Error in generateReport:', error);
-      addToast('Erro ao gerar relatório. Tente novamente.', 'error');
-    }
+    setInspectionStatus('completed');
+    addToast('Relatório gerado com sucesso!', 'success');
+    navigate(`/reports/${inspectionId}`);
   };
 
   if (loading) {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Camera, GitCompareArrows, FileText, Bot, ShieldCheck, ArrowRight, Star } from 'lucide-react';
+import { Camera, GitCompareArrows, FileText, Bot, ShieldCheck, ArrowRight, Star, Zap, Users, Building2 } from 'lucide-react';
 import ThemeToggle from '../components/Layout/ThemeToggle';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
@@ -76,6 +76,15 @@ const LandingPage: React.FC = () => {
     { name: 'Carlos Pereira', role: 'Vistoriador Autônomo', text: 'A análise por IA é um divisor de águas. A precisão na identificação de itens e problemas me economiza um tempo enorme em campo.', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026706d' },
   ];
 
+  const benefits = [
+    { icon: Bot, text: "Relatórios automáticos com fotos e IA", color: "blue" },
+    { icon: Zap, text: "Vistorias até 10x mais rápidas", color: "green" },
+    { icon: GitCompareArrows, text: "Comparação inteligente entre vistorias de entrada e saída", color: "purple" },
+    { icon: Users, text: "Ideal para proprietários, inquilinos e corretores", color: "orange" },
+    { icon: Building2, text: "Perfeito para imobiliárias, construtoras e administradoras", color: "red" },
+    { icon: ShieldCheck, text: "Registro confiável e seguro, sem papelada", color: "teal" }
+  ];
+
   const getImage = (key: string, fallback: string) => !imagesLoading ? (pageImages[key] || fallback) : fallback;
 
   return (
@@ -96,8 +105,53 @@ const LandingPage: React.FC = () => {
             </motion.div>
             <motion.div className="relative mt-12 lg:mt-20 max-w-5xl mx-auto" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.6 }}>
               <div className="bg-white dark:bg-slate-800 rounded-t-lg p-2 shadow-2xl shadow-slate-900/10 dark:shadow-blue-500/10"><div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-red-400"></div><div className="w-3 h-3 rounded-full bg-yellow-400"></div><div className="w-3 h-3 rounded-full bg-green-400"></div></div></div>
-              <img src={getImage('hero_image', 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/1200x750/f3f4f6/4a5568?text=Dashboard+Principal+do+VistorIA')} alt="Dashboard do VistorIA" className="w-full h-auto object-cover rounded-b-lg shadow-2xl shadow-slate-900/20 dark:shadow-blue-500/10" />
+              <img src={getImage('hero_image', 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/1200x750/f3f4f6/4a5568?text=Dashboard+Principal+do+VistorIA')} alt="Dashboard do VistorIA" className="w-full h-auto object-cover rounded-b-lg shadow-2xl shadow-slate-900/20 dark:shadow-blue-500/10" />
             </motion.div>
+          </div>
+        </section>
+
+        <section className="py-20 lg:py-28 bg-white dark:bg-slate-800/30">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
+                Por que usar nosso app?
+              </h2>
+              <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
+                Simplifique suas vistorias e ganhe tempo, segurança e precisão.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {benefits.map((benefit, index) => {
+                const Icon = benefit.icon;
+                const colors = {
+                    blue: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400",
+                    green: "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400",
+                    purple: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
+                    orange: "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400",
+                    red: "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400",
+                    teal: "bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400",
+                };
+                const colorClass = colors[benefit.color as keyof typeof colors] || colors.blue;
+
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.5 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    className="bg-gray-50 dark:bg-slate-800 p-6 rounded-xl text-center border border-gray-200 dark:border-slate-700"
+                  >
+                    <div className={`flex items-center justify-center w-16 h-16 ${colorClass.split(' ')[0]} ${colorClass.split(' ')[1]} rounded-full mx-auto mb-4`}>
+                      <Icon className={`w-8 h-8 ${colorClass.split(' ')[2]} ${colorClass.split(' ')[3]}`} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {benefit.text}
+                    </h3>
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
         </section>
 
@@ -105,10 +159,10 @@ const LandingPage: React.FC = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12"><h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">Uma plataforma, todas as soluções</h2><p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Do clique ao relatório final, tudo em um só lugar.</p></div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <BentoCard className="lg:col-span-2"><Bot className="w-8 h-8 text-blue-600 dark:text-blue-400 mb-4" /><h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Análise Inteligente com IA</h3><p className="text-gray-600 dark:text-gray-400">Nossa IA identifica objetos, materiais, cores e condições a partir de uma única foto, criando um inventário detalhado automaticamente.</p><div className="mt-4 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-900/50 flex-grow"><img src={getImage('feature_analysis_image', 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/800x450/e2e8f0/4a5568?text=Análise+de+Foto+com+IA')} alt="Análise de Foto com IA" className="w-full h-full object-cover"/></div></BentoCard>
-              <BentoCard><GitCompareArrows className="w-8 h-8 text-green-600 dark:text-green-400 mb-4" /><h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Relatórios Comparativos</h3><p className="text-gray-600 dark:text-gray-400">Compare vistorias de entrada e saída e veja o que mudou, o que está faltando e o que é novo.</p><div className="mt-4 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-900/50 flex-grow"><img src={getImage('feature_comparison_image', 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/600x400/e2e8f0/4a5568?text=Comparativo+Lado+a+Lado')} alt="Relatório Comparativo" className="w-full h-full object-cover"/></div></BentoCard>
-              <BentoCard><FileText className="w-8 h-8 text-purple-600 dark:text-purple-400 mb-4" /><h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">PDFs Profissionais</h3><p className="text-gray-600 dark:text-gray-400">Exporte relatórios completos e comparativos em PDF com um clique, prontos para enviar ao cliente.</p><div className="mt-4 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-900/50 flex-grow"><img src={getImage('feature_pdf_image', 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/400x500/e2e8f0/4a5568?text=Relatório+PDF')} alt="Exemplo de PDF" className="w-full h-full object-cover"/></div></BentoCard>
-              <BentoCard className="lg:col-span-2"><ShieldCheck className="w-8 h-8 text-red-600 dark:text-red-400 mb-4" /><h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Itens Faltando, Problemas e Segurança</h3><p className="text-gray-600 dark:text-gray-400">Nossa IA vai além de um simples inventário. Ela identifica com precisão o que está faltando em comparação com a vistoria de entrada, aponta problemas como rachaduras e mofo, e verifica itens de segurança cruciais.</p><div className="mt-4 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-900/50 flex-grow"><img src={getImage('feature_issues_image', 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/800x450/e2e8f0/4a5568?text=Detecção+de+Problemas')} alt="Detecção de Problemas" className="w-full h-full object-cover"/></div></BentoCard>
+              <BentoCard className="lg:col-span-2"><Bot className="w-8 h-8 text-blue-600 dark:text-blue-400 mb-4" /><h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Análise Inteligente com IA</h3><p className="text-gray-600 dark:text-gray-400">Nossa IA identifica objetos, materiais, cores e condições a partir de uma única foto, criando um inventário detalhado automaticamente.</p><div className="mt-4 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-900/50 flex-grow"><img src={getImage('feature_analysis_image', 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/800x450/e2e8f0/4a5568?text=Análise+de+Foto+com+IA')} alt="Análise de Foto com IA" className="w-full h-full object-cover"/></div></BentoCard>
+              <BentoCard><GitCompareArrows className="w-8 h-8 text-green-600 dark:text-green-400 mb-4" /><h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Relatórios Comparativos</h3><p className="text-gray-600 dark:text-gray-400">Compare vistorias de entrada e saída e veja o que mudou, o que está faltando e o que é novo.</p><div className="mt-4 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-900/50 flex-grow"><img src={getImage('feature_comparison_image', 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/600x400/e2e8f0/4a5568?text=Comparativo+Lado+a+Lado')} alt="Relatório Comparativo" className="w-full h-full object-cover"/></div></BentoCard>
+              <BentoCard><FileText className="w-8 h-8 text-purple-600 dark:text-purple-400 mb-4" /><h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">PDFs Profissionais</h3><p className="text-gray-600 dark:text-gray-400">Exporte relatórios completos e comparativos em PDF com um clique, prontos para enviar ao cliente.</p><div className="mt-4 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-900/50 flex-grow"><img src={getImage('feature_pdf_image', 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/400x500/e2e8f0/4a5568?text=Relatório+PDF')} alt="Exemplo de PDF" className="w-full h-full object-cover"/></div></BentoCard>
+              <BentoCard className="lg:col-span-2"><ShieldCheck className="w-8 h-8 text-red-600 dark:text-red-400 mb-4" /><h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Itens Faltando, Problemas e Segurança</h3><p className="text-gray-600 dark:text-gray-400">Nossa IA vai além de um simples inventário. Ela identifica com precisão o que está faltando em comparação com a vistoria de entrada, aponta problemas como rachaduras e mofo, e verifica itens de segurança cruciais.</p><div className="mt-4 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-900/50 flex-grow"><img src={getImage('feature_issues_image', 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/800x450/e2e8f0/4a5568?text=Detecção+de+Problemas')} alt="Detecção de Problemas" className="w-full h-full object-cover"/></div></BentoCard>
             </div>
           </div>
         </section>
@@ -117,9 +171,9 @@ const LandingPage: React.FC = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12"><h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">Simples como 1, 2, 3</h2><p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Comece a usar em minutos.</p></div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.5, delay: 0.1 }}><div className="flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mx-auto mb-4 text-2xl font-bold text-blue-600 dark:text-blue-400">1</div><h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Fotografe os Ambientes</h3><p className="text-gray-600 dark:text-gray-400">Tire fotos dos ambientes do imóvel. Nossa IA cuida do resto.</p><div className="mt-4 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-700/50 shadow-inner"><img src={getImage('how_it_works_step1_image', 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/400x300/e2e8f0/4a5568?text=Upload+de+Foto')} alt="Upload de Foto" className="w-full h-full object-cover"/></div></motion.div>
-              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.5, delay: 0.2 }}><div className="flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mx-auto mb-4 text-2xl font-bold text-blue-600 dark:text-blue-400">2</div><h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Valide a Análise da IA</h3><p className="text-gray-600 dark:text-gray-400">Revise e ajuste as informações geradas pela IA com poucos cliques.</p><div className="mt-4 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-700/50 shadow-inner"><img src={getImage('how_it_works_step2_image', 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/400x300/e2e8f0/4a5568?text=Validação+da+Análise')} alt="Validação da Análise" className="w-full h-full object-cover"/></div></motion.div>
-              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.5, delay: 0.3 }}><div className="flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mx-auto mb-4 text-2xl font-bold text-blue-600 dark:text-blue-400">3</div><h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Gere e Compare</h3><p className="text-gray-600 dark:text-gray-400">Crie relatórios individuais ou comparativos de entrada e saída em PDF.</p><div className="mt-4 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-700/50 shadow-inner"><img src={getImage('how_it_works_step3_image', 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/400x300/e2e8f0/4a5568?text=Geração+de+Relatório')} alt="Geração de Relatório" className="w-full h-full object-cover"/></div></motion.div>
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.5, delay: 0.1 }}><div className="flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mx-auto mb-4 text-2xl font-bold text-blue-600 dark:text-blue-400">1</div><h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Fotografe os Ambientes</h3><p className="text-gray-600 dark:text-gray-400">Tire fotos dos ambientes do imóvel. Nossa IA cuida do resto.</p><div className="mt-4 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-700/50 shadow-inner"><img src={getImage('how_it_works_step1_image', 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/400x300/e2e8f0/4a5568?text=Upload+de+Foto')} alt="Upload de Foto" className="w-full h-full object-cover"/></div></motion.div>
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.5, delay: 0.2 }}><div className="flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mx-auto mb-4 text-2xl font-bold text-blue-600 dark:text-blue-400">2</div><h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Valide a Análise da IA</h3><p className="text-gray-600 dark:text-gray-400">Revise e ajuste as informações geradas pela IA com poucos cliques.</p><div className="mt-4 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-700/50 shadow-inner"><img src={getImage('how_it_works_step2_image', 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/400x300/e2e8f0/4a5568?text=Validação+da+Análise')} alt="Validação da Análise" className="w-full h-full object-cover"/></div></motion.div>
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.5, delay: 0.3 }}><div className="flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mx-auto mb-4 text-2xl font-bold text-blue-600 dark:text-blue-400">3</div><h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Gere e Compare</h3><p className="text-gray-600 dark:text-gray-400">Crie relatórios individuais ou comparativos de entrada e saída em PDF.</p><div className="mt-4 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-700/50 shadow-inner"><img src={getImage('how_it_works_step3_image', 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/400x300/e2e8f0/4a5568?text=Geração+de+Relatório')} alt="Geração de Relatório" className="w-full h-full object-cover"/></div></motion.div>
             </div>
           </div>
         </section>

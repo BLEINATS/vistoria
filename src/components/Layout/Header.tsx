@@ -8,32 +8,9 @@ import { supabase } from '../../lib/supabase';
 const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [userName, setUserName] = useState<string | null>(null);
+  const { user, profile } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (user) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single();
-        
-        if (data) {
-          setUserName(data.full_name);
-        } else if (error) {
-          console.log("Info: No profile found for user");
-        }
-      } else {
-        // Reset user name when no user is logged in
-        setUserName(null);
-      }
-    };
-    fetchProfile();
-  }, [user]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -128,11 +105,15 @@ const Header: React.FC = () => {
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
               >
-                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-slate-700 flex items-center justify-center">
-                  <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
+                  {profile?.company_logo_url ? (
+                    <img src={profile.company_logo_url} alt="Logo" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                  )}
                 </div>
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-200 hidden sm:block">
-                  Olá, {userName || user?.email?.split('@')[0]}
+                  Olá, {profile?.full_name || user?.email?.split('@')[0]}
                 </span>
                 <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
               </button>
@@ -141,10 +122,10 @@ const Header: React.FC = () => {
               {showUserMenu && (
                 <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 py-1 z-50">
                   <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {userName || 'Usuário'}
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      {profile?.full_name || 'Usuário'}
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                       {user?.email}
                     </p>
                   </div>

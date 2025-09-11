@@ -203,15 +203,24 @@ const Properties: React.FC = () => {
   };
 
   const handleViewReport = (property: Property) => {
-    const entryInspection = property.inspections.find(i => i.inspection_type === 'entry' && i.status === 'completed');
-    const exitInspection = property.inspections.find(i => i.inspection_type === 'exit' && i.status === 'completed');
+    const completed = property.inspections.filter(i => i.status === 'completed');
+    
+    if (completed.length === 0) {
+      return; 
+    }
 
-    if (entryInspection && exitInspection) {
-      navigate(`/compare/${entryInspection.id}/${exitInspection.id}`);
-    } else if (entryInspection) {
-      navigate('/reports', { state: { inspectionId: entryInspection.id } });
-    } else if (exitInspection) {
-      navigate('/reports', { state: { inspectionId: exitInspection.id } });
+    const entry = completed.find(i => i.inspection_type === 'entry');
+    const exit = completed.find(i => i.inspection_type === 'exit');
+
+    if (entry && exit) {
+      navigate(`/compare/${entry.id}/${exit.id}`);
+      return;
+    }
+
+    const latestCompleted = completed.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+    
+    if (latestCompleted) {
+      navigate(`/reports/${latestCompleted.id}`);
     }
   };
   

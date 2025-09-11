@@ -14,6 +14,7 @@ import {
 import { motion } from 'framer-motion';
 import DashboardStats from '../components/Dashboard/DashboardStats';
 import RecentActivity from '../components/Dashboard/RecentProperties';
+import { useToast } from '../contexts/ToastContext';
 
 interface DashboardStatsData {
   totalProperties: number;
@@ -32,7 +33,7 @@ interface DashboardStatsData {
   issueTypes: Array<{ name: string; count: number; severity: 'low' | 'medium' | 'high' }>;
 }
 
-const QuickActions: React.FC<{ onUltimaVistoria: () => void, onRelatorios: () => void }> = ({ onUltimaVistoria, onRelatorios }) => (
+const QuickActions: React.FC<{ onUltimaVistoria: () => void, onRelatorios: () => void, isRelatoriosDisabled: boolean }> = ({ onUltimaVistoria, onRelatorios, isRelatoriosDisabled }) => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -60,7 +61,8 @@ const QuickActions: React.FC<{ onUltimaVistoria: () => void, onRelatorios: () =>
         </button>
         <button
           onClick={onRelatorios}
-          className="w-full flex items-center px-4 py-3 bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-colors"
+          disabled={isRelatoriosDisabled}
+          className="w-full flex items-center px-4 py-3 bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <FileText className="w-4 h-4 mr-3" />
           Último Relatório
@@ -72,10 +74,11 @@ const QuickActions: React.FC<{ onUltimaVistoria: () => void, onRelatorios: () =>
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [stats, setStats] = useState<DashboardStatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastProperty, setLastProperty] = useState<Property | null>(null);
-  const [lastReportData, setLastReportData] = useState<{entryId: string, exitId: string} | null>(null);
+  const [lastReportData, setLastReportData] = useState<{ entryId: string; exitId: string } | { singleId: string } | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -218,9 +221,19 @@ const Dashboard: React.FC = () => {
         const latestPropertyWithBoth = propertiesWithBothInspections[0];
         const entry = latestPropertyWithBoth.inspections.find(i => i.inspection_type === 'entry' && i.status === 'completed');
         const exit = latestPropertyWithBoth.inspections.find(i => i.inspection_type === 'exit' && i.status === 'completed');
-        if (entry && exit) setLastReportData({ entryId: entry.id, exitId: exit.id });
+        if (entry && exit) {
+            setLastReportData({ entryId: entry.id, exitId: exit.id });
+        }
       } else {
-        setLastReportData(null);
+        const allCompletedInspections = inspectionsData
+            .filter(i => i.status === 'completed')
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+        if (allCompletedInspections.length > 0) {
+            setLastReportData({ singleId: allCompletedInspections[0].id });
+        } else {
+            setLastReportData(null);
+        }
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -235,8 +248,15 @@ const Dashboard: React.FC = () => {
   };
 
   const handleRelatorios = () => {
-    if (lastReportData) navigate(`/compare/${lastReportData.entryId}/${lastReportData.exitId}`);
-    else navigate('/reports');
+    if (lastReportData) {
+      if ('entryId' in lastReportData) {
+        navigate(`/compare/${lastReportData.entryId}/${lastReportData.exitId}`);
+      } else {
+        navigate(`/reports/${lastReportData.singleId}`);
+      }
+    } else {
+      addToast('Nenhum relatório concluído foi encontrado.', 'error');
+    }
   };
 
   if (loading) {
@@ -274,7 +294,7 @@ const Dashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <RecentActivity activity={stats?.recentActivity} />
-        <QuickActions onUltimaVistoria={handleUltimaVistoria} onRelatorios={handleRelatorios} />
+        <QuickActions onUltimaVistoria={handleUltimaVistoria} onRelatorios={handleRelatorios} isRelatoriosDisabled={!lastReportData} />
       </div>
     </div>
   );
