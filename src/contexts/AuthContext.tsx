@@ -25,11 +25,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      // Timeout que estava funcionando - NÃO REMOVER!
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout na busca do perfil')), 3000);
+      });
+      
+      const queryPromise = supabase
         .from('profiles')
         .select('full_name, avatar_url')
         .eq('id', userId)
         .single();
+      
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
       
       if (error && error.code !== 'PGRST116') {
         setProfile(null);
@@ -37,6 +44,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setProfile(data ?? null);
       }
     } catch (e) {
+      // Se timeout ou erro, continua sem perfil (não trava)
       setProfile(null);
     }
   }, []);
