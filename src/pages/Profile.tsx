@@ -119,20 +119,16 @@ const Profile: React.FC = () => {
   const fetchUsers = async () => {
     setUsersLoading(true);
     try {
-      // Busca usuários com dados do auth.users e profiles
-      const { data: users, error } = await supabase
-        .from('profiles')
-        .select(`
-          id,
-          full_name,
-          company_name,
-          created_at,
-          avatar_url
-        `);
+      // Usar RPC segura para buscar usuários (validação admin server-side)
+      const { data: users, error } = await supabase.rpc('get_admin_users');
       
       if (error) {
         console.error('Error fetching users:', error);
-        addToast('Erro ao carregar usuários', 'error');
+        if (error.message?.includes('Acesso negado')) {
+          addToast('Acesso negado: apenas administradores', 'error');
+        } else {
+          addToast('Erro ao carregar usuários', 'error');
+        }
       } else {
         setUsers(users || []);
       }
@@ -404,7 +400,7 @@ const Profile: React.FC = () => {
                                   {userItem.full_name || 'Nome não informado'}
                                 </div>
                                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                                  ID: {userItem.id.slice(0, 8)}...
+                                  {userItem.email || 'Email não disponível'}
                                 </div>
                               </div>
                             </div>
@@ -417,12 +413,16 @@ const Profile: React.FC = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200">
-                              Gratuito
+                              {userItem.plan_tier || 'Gratuito'}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200">
-                              Ativo
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              userItem.is_active 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200'
+                                : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200'
+                            }`}>
+                              {userItem.is_active ? 'Ativo' : 'Inativo'}
                             </span>
                           </td>
                         </tr>
