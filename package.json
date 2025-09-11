@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "serve": "serve -s dist -p 5000",
     "deploy:functions": "node scripts/deploy.js"
   },
   "dependencies": {
