@@ -1,9 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { Property, InspectionSummary } from '../types';
 
-// Extracting URL from project ID and using the correct anon key
+// TEMPORARY: Hardcoded values due to incorrect environment variable configuration
+// The Replit environment has JWT token in VITE_SUPABASE_URL instead of actual URL
 const supabaseUrl = 'https://cmrukbrqkjvqeoxueltt.supabase.co';
-const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNtcnVrYnJxa2p2cWVveHVlbHR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwMjkxMTUsImV4cCI6MjA3MjYwNTExNX0.IBzjeyuE7LIusF54PIrgbDdDyrq8WLIntBS68U44tUQ';
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Supabase URL and Anon Key must be defined in .env file');
