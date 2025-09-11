@@ -1,0 +1,27 @@
+[vite] connecting...
+[vite] connected.
+Error fetching users: 
+Object {code: "PGRST202", details: "Searched for the function public.get_admin_users without parameters or with a single unnamed…", hint: null, message: "Could not find the function public.get_admin_users without parameters in the schema cache"}
+
+Error fetching users: 
+Object {code: "PGRST202", details: "Searched for the function public.get_admin_users without parameters or with a single unnamed…", hint: null, message: "Could not find the function public.get_admin_users without parameters in the schema cache"}
+
+Error fetching users: 
+Object {code: "PGRST202", details: "Searched for the function public.get_admin_users without parameters or with a single unnamed…", hint: null, message: "Could not find the function public.get_admin_users without parameters in the schema cache"}
+
+Error fetching users: 
+Object {code: "PGRST202", details: "Searched for the function public.get_admin_users without parameters or with a single unnamed…", hint: null, message: "Could not find the function public.get_admin_users without parameters in the schema cache"}
+
+Error fetching users: 
+Object {code: "PGRST202", details: "Searched for the function public.get_admin_users without parameters or with a single unnamed…", hint: null, message: "Could not find the function public.get_admin_users without parameters in the schema cache"}
+
+Error fetching users: 
+Object {code: "PGRST202", details: "Searched for the function public.get_admin_users without parameters or with a single unnamed…", hint: null, message: "Could not find the function public.get_admin_users without parameters in the schema cache"}
+code: "PGRST202"
+details: "Searched for the function public.get_admin_users without parameters or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache."
+hint: null
+message: "Could not find the function public.get_admin_users without parameters in the schema cache"
+[[Prototype]]: Object
+
+Error fetching users: 
+Object {code: "PGRST202", details: "Searched for the function public.get_admin_users without parameters or with a single unnamed…", hint: null, message: "Could not find the function public.get_admin_users without parameters in the schema cache"}
