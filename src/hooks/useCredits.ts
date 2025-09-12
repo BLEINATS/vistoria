@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 
 export interface CreditPackage {
   id: string;
@@ -49,7 +50,7 @@ export const useCredits = () => {
     }
   ];
 
-  // Fetch user's current credits
+  // Fetch user's current credits from server-side database
   const fetchUserCredits = useCallback(async () => {
     if (!user) return;
 
@@ -57,35 +58,34 @@ export const useCredits = () => {
       setLoading(true);
       setError(null);
 
-      // Get user credits from localStorage as fallback (for demo)
-      const stored = localStorage.getItem('vistoria_credits');
-      if (stored) {
-        try {
-          const data = JSON.parse(stored);
-          if (data.user_id === user.id) {
-            setUserCredits(data);
-            setLoading(false);
-            return;
-          }
-        } catch {
-          localStorage.removeItem('vistoria_credits');
-        }
+      // Use server-side RPC function to get user's credit balance
+      const { data, error: rpcError } = await supabase.rpc('get_user_credits', {
+        p_user_id: user.id
+      });
+
+      if (rpcError) {
+        console.error('Error fetching user credits from RPC:', rpcError);
+        throw rpcError;
       }
 
-      // Initialize with zero credits if no data found
-      const initialCredits: UserCredits = {
-        total_credits: 0,
-        used_credits: 0,
-        remaining_credits: 0,
-        last_updated: new Date().toISOString()
-      };
-
-      setUserCredits(initialCredits);
-      localStorage.setItem('vistoria_credits', JSON.stringify({
-        ...initialCredits,
-        user_id: user.id
-      }));
-
+      if (data && data.length > 0) {
+        const creditData = data[0]; // RPC returns array, take first result
+        setUserCredits({
+          total_credits: creditData.total_credits,
+          used_credits: creditData.used_credits,
+          remaining_credits: creditData.remaining_credits,
+          last_updated: creditData.last_updated
+        });
+      } else {
+        // Initialize with zero credits if no data found
+        const initialCredits: UserCredits = {
+          total_credits: 0,
+          used_credits: 0,
+          remaining_credits: 0,
+          last_updated: new Date().toISOString()
+        };
+        setUserCredits(initialCredits);
+      }
     } catch (error) {
       console.error('Error fetching user credits:', error);
       setError('Erro ao carregar créditos');
@@ -94,67 +94,93 @@ export const useCredits = () => {
     }
   }, [user]);
 
-  // Use credit for a property inspection
-  const useCredit = useCallback(async (): Promise<boolean> => {
-    if (!user || !userCredits) return false;
-
-    if (userCredits.remaining_credits <= 0) {
-      setError('Créditos insuficientes. Compre mais créditos para continuar.');
-      return false;
-    }
+  // Use credit for a property inspection using server-side validation
+  const useCredit = useCallback(async (propertyId?: string, description?: string): Promise<boolean> => {
+    if (!user) return false;
 
     try {
-      const updatedCredits: UserCredits = {
-        ...userCredits,
-        used_credits: userCredits.used_credits + 1,
-        remaining_credits: userCredits.remaining_credits - 1,
-        last_updated: new Date().toISOString()
-      };
+      setError(null);
+      
+      // Use server-side RPC function to use a credit
+      const { data, error: rpcError } = await supabase.rpc('use_credit', {
+        p_user_id: user.id,
+        p_property_id: propertyId || null,
+        p_description: description || 'Property inspection'
+      });
 
-      setUserCredits(updatedCredits);
-      localStorage.setItem('vistoria_credits', JSON.stringify({
-        ...updatedCredits,
-        user_id: user.id
-      }));
+      if (rpcError) {
+        console.error('Error using credit:', rpcError);
+        setError('Erro ao usar crédito');
+        return false;
+      }
 
+      if (!data) {
+        setError('Créditos insuficientes. Compre mais créditos para continuar.');
+        return false;
+      }
+
+      // Refresh credit balance after using a credit
+      await fetchUserCredits();
       return true;
     } catch (error) {
       console.error('Error using credit:', error);
       setError('Erro ao usar crédito');
       return false;
     }
-  }, [user, userCredits]);
+  }, [user, fetchUserCredits]);
 
-  // Add credits (after purchase)
-  const addCredits = useCallback(async (credits: number): Promise<boolean> => {
-    if (!user || !userCredits) return false;
+  // Add credits (after purchase) using server-side RPC function
+  const addCredits = useCallback(async (credits: number, asaasPaymentId?: string, description?: string): Promise<boolean> => {
+    if (!user) return false;
 
     try {
-      const updatedCredits: UserCredits = {
-        ...userCredits,
-        total_credits: userCredits.total_credits + credits,
-        remaining_credits: userCredits.remaining_credits + credits,
-        last_updated: new Date().toISOString()
-      };
+      setError(null);
+      
+      // Use server-side RPC function to add credits
+      const { data, error: rpcError } = await supabase.rpc('add_credits', {
+        p_user_id: user.id,
+        p_credits: credits,
+        p_asaas_payment_id: asaasPaymentId || null,
+        p_description: description || 'Credit purchase'
+      });
 
-      setUserCredits(updatedCredits);
-      localStorage.setItem('vistoria_credits', JSON.stringify({
-        ...updatedCredits,
-        user_id: user.id
-      }));
+      if (rpcError) {
+        console.error('Error adding credits:', rpcError);
+        setError('Erro ao adicionar créditos');
+        return false;
+      }
 
-      return true;
+      // Refresh credit balance after adding credits
+      await fetchUserCredits();
+      return data; // Should return true if successful
     } catch (error) {
       console.error('Error adding credits:', error);
       setError('Erro ao adicionar créditos');
       return false;
     }
-  }, [user, userCredits]);
+  }, [user, fetchUserCredits]);
 
-  // Check if user can perform action (requires credit)
-  const canUseCredit = useCallback((): boolean => {
-    return userCredits ? userCredits.remaining_credits > 0 : false;
-  }, [userCredits]);
+  // Check if user can perform action (requires credit) using server-side validation
+  const canUseCredit = useCallback(async (): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      // Use server-side RPC function to check if user can use credit
+      const { data, error } = await supabase.rpc('can_use_credit', {
+        p_user_id: user.id
+      });
+
+      if (error) {
+        console.error('Error checking credit availability:', error);
+        return false;
+      }
+
+      return data || false;
+    } catch (error) {
+      console.error('Error checking credit availability:', error);
+      return false;
+    }
+  }, [user]);
 
   // Get credit price per property
   const getCreditPrice = (packageId: string): number => {

@@ -135,7 +135,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                         name="paymentMethod"
                         value={method}
                         checked={selectedMethod === method}
-                        onChange={(e) => setSelectedMethod(e.target.value as any)}
+                        onChange={(e) => setSelectedMethod(e.target.value as 'PIX' | 'BOLETO' | 'CREDIT_CARD')}
                         className="mt-1"
                       />
                       <div className="flex-1">
@@ -178,7 +178,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                   <li>• Análise com IA</li>
                   <li>• Relatórios comparativos</li>
                   <li>• Exportação em PDF</li>
-                  {plan.name === 'Premium' && (
+                  {plan.name === 'Empresarial' && (
                     <>
                       <li>• Suporte prioritário</li>
                       <li>• API para integrações</li>

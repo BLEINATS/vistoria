@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import type { SubscriptionPlan, UserPlanLimits, Subscription, LocalStorageSubscription } from '../types/subscription';
+import type { SubscriptionPlan, UserPlanLimits, Subscription } from '../types/subscription';
 
 export const useSubscription = () => {
   const { user } = useAuth();
@@ -14,182 +14,104 @@ export const useSubscription = () => {
   // Ref for fetchUserLimits to avoid stale closures in event listeners
   const fetchUserLimitsRef = useRef<(() => Promise<void>) | null>(null);
 
-  // Static plan limits mapping to prevent dependency loops
-  const PLAN_LIMITS = {
-    'Gratuito': {
-      properties_limit: 1,
-      environments_limit: 3,
-      photos_per_environment_limit: 5,
-      ai_analysis_limit: null
-    },
-    'Básico': {
-      properties_limit: 5,
-      environments_limit: null,
-      photos_per_environment_limit: 10,
-      ai_analysis_limit: null
-    },
-    'Profissional': {
-      properties_limit: 10,
-      environments_limit: null,
-      photos_per_environment_limit: 15,
-      ai_analysis_limit: null
-    },
-    'Empresarial': {
-      properties_limit: null,
-      environments_limit: null,
-      photos_per_environment_limit: null,
-      ai_analysis_limit: null
-    },
-    'Pay-per-use': {
-      properties_limit: null, // Based on credits purchased
-      environments_limit: null,
-      photos_per_environment_limit: 10,
-      ai_analysis_limit: null
-    }
-  };
+  // No longer needed - plan limits are now fetched from server-side database
 
-  // Use static plans to prevent database cache issues
+  // Fetch subscription plans from server-side database
   const fetchPlans = useCallback(async () => {
-    // Updated plans according to monetization strategy
-    setPlans([
-      {
-        id: '7d66e56a-bea2-4c10-b9ca-0f23f2231a56',
-        name: 'Gratuito',
-        price: 0,
-        currency: 'BRL',
-        interval_type: 'month',
-        properties_limit: 1,
-        environments_limit: 3,
-        photos_per_environment_limit: 5,
-        ai_analysis_limit: null,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      {
-        id: 'f9de3820-0950-4370-99e2-f3bf517ba85d',
-        name: 'Básico',
-        price: 97.00,
-        currency: 'BRL',
-        interval_type: 'month',
-        properties_limit: 5,
-        environments_limit: null,
-        photos_per_environment_limit: 10,
-        ai_analysis_limit: null,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      {
-        id: 'd6fa6dd4-bb8c-4461-9172-6d90b4832a43',
-        name: 'Profissional',
-        price: 147.00,
-        currency: 'BRL',
-        interval_type: 'month',
-        properties_limit: 10,
-        environments_limit: null,
-        photos_per_environment_limit: 15,
-        ai_analysis_limit: null,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      {
-        id: 'e8fa7dd5-cc9d-5572-0283-7e91c5943b54',
-        name: 'Empresarial',
-        price: 170.00,
-        currency: 'BRL',
-        interval_type: 'month',
-        properties_limit: null,
-        environments_limit: null,
-        photos_per_environment_limit: null,
-        ai_analysis_limit: null,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+    try {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('price', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching plans:', error);
+        throw error;
       }
-    ]);
-    
-    // No delay needed - data is already static
+
+      if (data) {
+        setPlans(data.map(plan => ({
+          id: plan.id,
+          name: plan.name,
+          price: plan.price,
+          currency: plan.currency,
+          interval_type: plan.interval_type as 'month' | 'year',
+          properties_limit: plan.properties_limit,
+          environments_limit: plan.environments_limit,
+          photos_per_environment_limit: plan.photos_per_environment_limit,
+          ai_analysis_limit: plan.ai_analysis_limit,
+          is_active: plan.is_active,
+          created_at: plan.created_at,
+          updated_at: plan.updated_at
+        })));
+      }
+    } catch (err) {
+      console.error('Error fetching plans:', err);
+      // Fallback to basic plans if database is unavailable
+      setPlans([
+        {
+          id: 'fallback-gratuito',
+          name: 'Gratuito',
+          price: 0,
+          currency: 'BRL',
+          interval_type: 'month',
+          properties_limit: 1,
+          environments_limit: 3,
+          photos_per_environment_limit: 5,
+          ai_analysis_limit: null,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ]);
+    }
   }, []);
 
-  // Fetch user's current limits and usage (real data from database)
+  // Fetch user's current limits and usage from server-side database
   const fetchUserLimits = useCallback(async () => {
     if (!user) return;
 
     try {
-      // Get current plan from localStorage with better error handling
-      let planName = 'Gratuito';
+      setError(null);
       
-      const stored = localStorage.getItem('vistoria_subscription');
-      if (stored) {
-        try {
-          const data = JSON.parse(stored);
-          planName = data.plan_name || 'Gratuito';
-          
-          // Ensure data is from this specific user
-          if (data.user_id !== user.id) {
-            localStorage.removeItem('vistoria_subscription');
-            planName = 'Gratuito';
-          }
-        } catch {
-          // Clear corrupted data
-          localStorage.removeItem('vistoria_subscription');
-          planName = 'Gratuito';
-        }
-      }
-
-      // Get real usage from database using RPC function that already works
-      let properties_used = 0;
-      let environments_used = 0;
-      let photos_uploaded = 0;
-
-      try {
-        // Use the existing RPC function to get properties with details
-        const { data: propertiesData } = await supabase.rpc('get_properties_with_details');
-        
-        if (propertiesData && Array.isArray(propertiesData)) {
-          // Count user's properties
-          properties_used = propertiesData.filter(p => p.user_id === user.id).length;
-          
-          // Count environments - each inspection represents an environment/room being inspected
-          environments_used = propertiesData
-            .filter(p => p.user_id === user.id)
-            .reduce((total, property) => {
-              return total + (property.inspections?.length || 0);
-            }, 0);
-          
-          // Count photos from all inspections
-          photos_uploaded = propertiesData
-            .filter(p => p.user_id === user.id)
-            .reduce((total, property) => {
-              const inspectionPhotos = property.inspections?.reduce((photoCount: number, inspection: any) => {
-                return photoCount + (inspection.photos?.length || 0);
-              }, 0) || 0;
-              return total + inspectionPhotos;
-            }, 0);
-        }
-      } catch (error) {
-        console.error('Error fetching usage data:', error);
-        // Use fallback values
-        properties_used = 0;
-        environments_used = 0;
-        photos_uploaded = 0;
-      }
-
-      // Set limits based on plan using static mapping
-      const planLimits = PLAN_LIMITS[planName as keyof typeof PLAN_LIMITS] || PLAN_LIMITS['Gratuito'];
-      setUserLimits({
-        plan_name: planName,
-        properties_limit: planLimits.properties_limit,
-        environments_limit: planLimits.environments_limit,
-        photos_per_environment_limit: planLimits.photos_per_environment_limit,
-        ai_analysis_limit: planLimits.ai_analysis_limit,
-        properties_used: properties_used,
-        environments_used: environments_used,
-        photos_uploaded: photos_uploaded,
-        ai_analyses_used: 0 // For now, not tracking this specifically
+      // Use server-side RPC function to get user's plan limits and current usage
+      const { data, error: rpcError } = await supabase.rpc('get_user_plan_limits', {
+        p_user_id: user.id
       });
+
+      if (rpcError) {
+        console.error('Error fetching user limits from RPC:', rpcError);
+        throw rpcError;
+      }
+
+      if (data && data.length > 0) {
+        const limitData = data[0]; // RPC returns array, take first result
+        setUserLimits({
+          plan_name: limitData.plan_name,
+          properties_limit: limitData.properties_limit,
+          environments_limit: limitData.environments_limit,
+          photos_per_environment_limit: limitData.photos_per_environment_limit,
+          ai_analysis_limit: limitData.ai_analysis_limit,
+          properties_used: limitData.properties_used,
+          environments_used: limitData.environments_used,
+          photos_uploaded: limitData.photos_uploaded,
+          ai_analyses_used: limitData.ai_analyses_used
+        });
+      } else {
+        // Fallback to free plan if no data returned
+        setUserLimits({
+          plan_name: 'Gratuito',
+          properties_limit: 1,
+          environments_limit: 3,
+          photos_per_environment_limit: 5,
+          ai_analysis_limit: null,
+          properties_used: 0,
+          environments_used: 0,
+          photos_uploaded: 0,
+          ai_analyses_used: 0
+        });
+      }
     } catch (err) {
       console.error('Error fetching user limits:', err);
       setError('Erro ao carregar limites do usuário');
@@ -201,15 +123,8 @@ export const useSubscription = () => {
     fetchUserLimitsRef.current = fetchUserLimits;
   });
 
-  // Cross-tab synchronization
+  // Cross-tab synchronization and real-time updates
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'vistoria_subscription' && user && fetchUserLimitsRef.current) {
-        // Refresh user limits when subscription changes in other tabs
-        fetchUserLimitsRef.current();
-      }
-    };
-
     const handleCustomEvent = (_e: CustomEvent) => {
       if (user && fetchUserLimitsRef.current) {
         // Refresh user limits when subscription changes in same tab
@@ -224,21 +139,18 @@ export const useSubscription = () => {
       }
     };
 
-    // Listen for localStorage changes from other tabs
-    window.addEventListener('storage', handleStorageChange);
     // Listen for custom subscription update events (same tab)
     window.addEventListener('subscriptionUpdated', handleCustomEvent as EventListener);
-    // Listen for tab visibility changes
+    // Listen for tab visibility changes to ensure fresh data
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('subscriptionUpdated', handleCustomEvent as EventListener);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [user]);
 
-  // Fetch current user subscription - using localStorage temporarily due to Supabase cache issues
+  // Fetch current user subscription from server-side database
   const fetchCurrentSubscription = useCallback(async () => {
     if (!user) {
       setCurrentSubscription(null);
@@ -246,50 +158,45 @@ export const useSubscription = () => {
     }
     
     try {
-      // TEMPORARY: Use localStorage until Supabase cache issues are resolved
-      // Try to get from localStorage first (for recent subscriptions)
-      const stored = localStorage.getItem('vistoria_subscription');
-      if (stored) {
-        try {
-          const data = JSON.parse(stored) as LocalStorageSubscription;
-          if (data.user_id === user.id && data.status === 'active') {
-            // Find the plan_id from plan_name
-            const plan = plans.find(p => p.name === data.plan_name);
-            const plan_id = plan?.id || 'unknown-plan';
-            
-            // Convert localStorage format to subscription format
-            const now = new Date().toISOString();
-            const subscription: Subscription = {
-              id: String(data.id || 1),
-              user_id: data.user_id,
-              plan_id: plan_id,
-              asaas_subscription_id: data.asaas_subscription_id || null,
-              asaas_customer_id: data.asaas_customer_id || null,
-              status: data.status,
-              current_period_start: data.created_at || now,
-              current_period_end: data.updated_at || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // Default: 30 days from now
-              created_at: data.created_at || now,
-              updated_at: data.updated_at || now
-            };
-            setCurrentSubscription(subscription);
-            return;
-          }
-        } catch (e) {
-          console.warn('Invalid subscription data in localStorage:', e);
-        }
+      // Fetch subscription directly from database
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 means no rows returned
+        console.error('Error fetching subscription:', error);
+        throw error;
       }
-      
-      // No valid subscription found, user is on free plan
-      setCurrentSubscription(null);
+
+      if (data) {
+        setCurrentSubscription({
+          id: data.id,
+          user_id: data.user_id,
+          plan_id: data.plan_id,
+          asaas_subscription_id: data.asaas_subscription_id,
+          asaas_customer_id: data.asaas_customer_id,
+          status: data.status,
+          current_period_start: data.current_period_start,
+          current_period_end: data.current_period_end,
+          created_at: data.created_at,
+          updated_at: data.updated_at
+        });
+      } else {
+        // No active subscription found, user is on free plan
+        setCurrentSubscription(null);
+      }
       
     } catch (error) {
       console.error('Error fetching subscription:', error);
       setCurrentSubscription(null);
     }
-  }, [user]);
+  }, [user, plans]);
 
   // Check if user can perform an action based on limits
-  const canPerformAction = useCallback((action: 'create_property' | 'add_environment' | 'upload_photo') => {
+  const canPerformAction = useCallback((action: 'create_property' | 'add_environment' | 'upload_photo' | 'use_ai_analysis' | 'generate_report') => {
     if (!userLimits) return false;
 
     switch (action) {
@@ -303,6 +210,14 @@ export const useSubscription = () => {
       
       case 'upload_photo':
         // This is handled per-environment in the component
+        return true;
+      
+      case 'use_ai_analysis':
+        return userLimits.ai_analysis_limit === null || 
+               userLimits.ai_analyses_used < userLimits.ai_analysis_limit;
+      
+      case 'generate_report':
+        // Reports are generally allowed unless specifically limited
         return true;
       
       default:
@@ -324,15 +239,26 @@ export const useSubscription = () => {
     return { used, remaining: Math.max(0, limit - used), unlimited: false };
   }, [userLimits]);
 
-  // Update usage (refresh from database)
-  const updateUsage = useCallback(async (_type: 'properties' | 'environments' | 'photos' | 'ai_analyses', _count = 1) => {
+  // Update usage using server-side RPC function
+  const updateUsage = useCallback(async (type: 'properties' | 'environments' | 'photos' | 'ai_analyses', count = 1) => {
     if (!user) return false;
 
     try {
-      // Instead of manually tracking, just refresh the counts from database
-      // This ensures we always have accurate counts
+      // Use server-side RPC function to increment usage
+      const { data, error } = await supabase.rpc('increment_user_usage', {
+        p_user_id: user.id,
+        p_type: type,
+        p_count: count
+      });
+
+      if (error) {
+        console.error('Error updating usage:', error);
+        return false;
+      }
+
+      // Refresh user limits to reflect the updated usage
       await fetchUserLimits();
-      return true;
+      return data; // Should return true if successful
     } catch (err) {
       console.error('Error updating usage:', err);
       return false;

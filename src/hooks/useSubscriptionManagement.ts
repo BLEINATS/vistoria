@@ -52,25 +52,39 @@ export const useSubscriptionManagement = () => {
   const simulateUpgrade = async (plan: SubscriptionPlan) => {
     if (!user) return { success: false, message: 'Usuário não encontrado' };
     
-    // For free plan, just update locally
+    // For free plan, create/update subscription in database
     if (plan.price === 0) {
-      const subscriptionData = {
-        user_id: user.id,
-        plan_name: plan.name,
-        price: plan.price,
-        upgraded_at: new Date().toISOString(),
-        status: 'active'
-      };
-      
-      localStorage.setItem('vistoria_subscription', JSON.stringify(subscriptionData));
-      
-      // Trigger custom event for same-tab synchronization (since storage events don't fire on the same tab)
-      window.dispatchEvent(new CustomEvent('subscriptionUpdated', { detail: subscriptionData }));
-      
-      return {
-        success: true,
-        message: `Plano ${plan.name} ativado com sucesso!`
-      };
+      try {
+        // Use server-side RPC function to create/update subscription
+        const { error } = await supabase.rpc('create_user_subscription', {
+          user_uuid: user.id,
+          plan_name_param: plan.name,
+          price_param: plan.price,
+          asaas_subscription_id_param: null,
+          asaas_customer_id_param: null,
+          status_param: 'active',
+          billing_type_param: 'free'
+        });
+        
+        if (error) {
+          console.error('Error creating free subscription:', error);
+          throw error;
+        }
+        
+        // Trigger custom event for same-tab synchronization
+        window.dispatchEvent(new CustomEvent('subscriptionUpdated', { detail: { plan_name: plan.name } }));
+        
+        return {
+          success: true,
+          message: `Plano ${plan.name} ativado com sucesso!`
+        };
+      } catch (error) {
+        console.error('Error upgrading to free plan:', error);
+        return {
+          success: false,
+          message: 'Erro ao ativar o plano. Tente novamente.'
+        };
+      }
     }
 
     // For paid plans, this should not be used - use createSubscription instead
@@ -80,54 +94,51 @@ export const useSubscriptionManagement = () => {
     };
   };
 
-  const getCurrentPlan = () => {
-    const stored = localStorage.getItem('vistoria_subscription');
-    if (stored) {
-      try {
-        const data = JSON.parse(stored);
-        return data.plan_name;
-      } catch {
-        return 'Gratuito';
+  const getCurrentPlan = async () => {
+    if (!user) return 'Gratuito';
+    
+    try {
+      // Fetch current subscription from database
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('plan_name')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 means no rows returned
+        console.error('Error fetching current plan:', error);
       }
+
+      return data?.plan_name || 'Gratuito';
+    } catch (error) {
+      console.error('Error getting current plan:', error);
+      return 'Gratuito';
     }
-    return 'Gratuito';
   };
 
-  const getPlanLimits = (planName: string) => {
-    switch (planName) {
-      case 'Básico':
-        return {
-          plan_name: 'Básico',
-          properties_limit: 2,
-          environments_limit: null,
-          photos_per_environment_limit: 5,
-          properties_used: 0,
-          environments_used: 0,
-          photos_uploaded: 0,
-          ai_analyses_used: 0
-        };
-      case 'Premium':
-        return {
-          plan_name: 'Premium',
-          properties_limit: null,
-          environments_limit: null,
-          photos_per_environment_limit: 5,
-          properties_used: 0,
-          environments_used: 0,
-          photos_uploaded: 0,
-          ai_analyses_used: 0
-        };
-      default:
-        return {
-          plan_name: 'Gratuito',
-          properties_limit: 1,
-          environments_limit: 3,
-          photos_per_environment_limit: 5,
-          properties_used: 0,
-          environments_used: 0,
-          photos_uploaded: 0,
-          ai_analyses_used: 0
-        };
+  const getPlanLimits = async () => {
+    if (!user) return null;
+    
+    try {
+      // Use server-side RPC function to get user's plan limits and current usage
+      const { data, error } = await supabase.rpc('get_user_plan_limits', {
+        p_user_id: user.id
+      });
+
+      if (error) {
+        console.error('Error fetching plan limits:', error);
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        return data[0]; // RPC returns array, take first result
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error getting plan limits:', error);
+      return null;
     }
   };
 

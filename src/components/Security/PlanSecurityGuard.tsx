@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 export type SecurityAction = 
   | 'create_property' 
   | 'add_environment' 
-  | 'upload_photos' 
+  | 'upload_photo' 
   | 'use_ai_analysis'
   | 'generate_report';
 
@@ -25,7 +25,7 @@ const PlanSecurityGuard: React.FC<PlanSecurityGuardProps> = ({
   fallbackComponent
 }) => {
   const { canPerformAction, userLimits, getRemainingUsage, loading } = useSubscription();
-  const { canUseCredit, userCredits } = useCredits();
+  const { userCredits } = useCredits();
 
   if (loading) {
     return (
@@ -39,8 +39,9 @@ const PlanSecurityGuard: React.FC<PlanSecurityGuardProps> = ({
   const isPayPerUse = userLimits?.plan_name === 'Pay-per-use';
   const needsCredit = requiresCredit && (isPayPerUse || action === 'create_property');
 
-  // For pay-per-use: check credits first
-  if (needsCredit && !canUseCredit()) {
+  // For pay-per-use: check credits first (use client-side credit count as it's already fetched)
+  const hasCredits = userCredits ? userCredits.remaining_credits > 0 : false;
+  if (needsCredit && !hasCredits) {
     return fallbackComponent || (
       <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 text-center">
         <div className="flex items-center justify-center w-16 h-16 bg-orange-100 dark:bg-orange-900/50 rounded-full mx-auto mb-4">
@@ -97,7 +98,7 @@ const PlanSecurityGuard: React.FC<PlanSecurityGuardProps> = ({
           cta: 'Fazer Upgrade para Adicionar Mais Ambientes'
         };
       
-      case 'upload_photos':
+      case 'upload_photo':
         return {
           title: 'Limite de Fotos Atingido',
           message: `Você atingiu o limite de fotos por ambiente do plano ${userLimits?.plan_name}.`,
