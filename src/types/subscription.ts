@@ -6,7 +6,7 @@ export interface SubscriptionPlan {
   interval_type: 'month' | 'year';
   properties_limit: number | null;
   environments_limit: number | null;
-  photos_per_environment_limit: number;
+  photos_per_environment_limit: number | null;
   ai_analysis_limit: number | null;
   is_active: boolean;
   created_at: string;
@@ -43,7 +43,7 @@ export interface UserPlanLimits {
   plan_name: string;
   properties_limit: number | null;
   environments_limit: number | null;
-  photos_per_environment_limit: number;
+  photos_per_environment_limit: number | null;
   ai_analysis_limit: number | null;
   properties_used: number;
   environments_used: number;
@@ -67,4 +67,18 @@ export interface AsaasSubscription {
   value: number;
   nextDueDate: string;
   status: 'ACTIVE' | 'CANCELLED' | 'SUSPENDED';
+}
+
+// Interface for subscription data stored in localStorage
+export interface LocalStorageSubscription {
+  id?: string | number;
+  user_id: string;
+  plan_name: string;
+  price: number;
+  asaas_subscription_id?: string | null;
+  asaas_customer_id?: string | null;
+  status: 'active' | 'cancelled' | 'past_due' | 'suspended';
+  billing_type?: string;
+  created_at?: string;
+  updated_at?: string;
 }

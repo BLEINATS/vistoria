@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import type { SubscriptionPlan, UserPlanLimits, Subscription } from '../types/subscription';
+import type { SubscriptionPlan, UserPlanLimits, Subscription, LocalStorageSubscription } from '../types/subscription';
 
 export const useSubscription = () => {
   const { user } = useAuth();
@@ -251,21 +251,27 @@ export const useSubscription = () => {
       const stored = localStorage.getItem('vistoria_subscription');
       if (stored) {
         try {
-          const data = JSON.parse(stored);
+          const data = JSON.parse(stored) as LocalStorageSubscription;
           if (data.user_id === user.id && data.status === 'active') {
+            // Find the plan_id from plan_name
+            const plan = plans.find(p => p.name === data.plan_name);
+            const plan_id = plan?.id || 'unknown-plan';
+            
             // Convert localStorage format to subscription format
-            setCurrentSubscription({
-              id: data.id || 1,
+            const now = new Date().toISOString();
+            const subscription: Subscription = {
+              id: String(data.id || 1),
               user_id: data.user_id,
-              plan_name: data.plan_name,
-              price: data.price,
+              plan_id: plan_id,
               asaas_subscription_id: data.asaas_subscription_id || null,
               asaas_customer_id: data.asaas_customer_id || null,
               status: data.status,
-              billing_type: data.billing_type || 'CREDIT_CARD',
-              created_at: data.created_at || new Date().toISOString(),
-              updated_at: data.updated_at || new Date().toISOString()
-            } as Subscription);
+              current_period_start: data.created_at || now,
+              current_period_end: data.updated_at || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // Default: 30 days from now
+              created_at: data.created_at || now,
+              updated_at: data.updated_at || now
+            };
+            setCurrentSubscription(subscription);
             return;
           }
         } catch (e) {

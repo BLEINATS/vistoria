@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, CreditCard, FileText, Zap, Crown } from 'lucide-react';
+import { X, CreditCard, Zap, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { SubscriptionPlan } from '../../types/subscription';
 
@@ -29,7 +29,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       case 'Profissional':
         return <Crown className="w-8 h-8 text-purple-500" />;
       case 'Empresarial':
-        return <Crown className="w-8 h-8 text-gold-500" />;
+        return <Crown className="w-8 h-8 text-yellow-500" />;
       default:
         return <CreditCard className="w-8 h-8 text-gray-500" />;
     }
