@@ -10,7 +10,7 @@ const corsHeaders = {
 
 interface CreateSubscriptionRequest {
   planId: string
-  paymentMethod: 'PIX' | 'BOLETO' | 'CREDIT_CARD'
+  paymentMethod: 'BOLETO' | 'CREDIT_CARD'
 }
 
 interface AsaasCustomer {
@@ -129,11 +129,11 @@ serve(async (req) => {
     const { planId, paymentMethod } = requestData
 
     // Validate paymentMethod server-side to prevent manipulation
-    const validPaymentMethods: Array<'PIX' | 'BOLETO' | 'CREDIT_CARD'> = ['PIX', 'BOLETO', 'CREDIT_CARD']
+    const validPaymentMethods: Array<'BOLETO' | 'CREDIT_CARD'> = ['BOLETO', 'CREDIT_CARD']
     if (!paymentMethod || !validPaymentMethods.includes(paymentMethod)) {
       return new Response(
         JSON.stringify({ 
-          error: 'Invalid payment method. Must be one of: PIX, BOLETO, CREDIT_CARD',
+          error: 'Invalid payment method for subscriptions. Must be one of: BOLETO, CREDIT_CARD',
           received: paymentMethod 
         }),
         {
@@ -345,21 +345,7 @@ serve(async (req) => {
         if (charges.data && charges.data.length > 0) {
           const charge: AsaasPayment = charges.data[0]
           
-          if (paymentMethod === 'PIX') {
-            // Get PIX details
-            const pixResponse = await fetch(`https://api.asaas.com/v3/payments/${charge.id}/pixQrCode`, {
-              headers: {
-                'access_token': asaasApiKey,
-                'Content-Type': 'application/json',
-              },
-            })
-            
-            if (pixResponse.ok) {
-              const pixData: AsaasPixData = await pixResponse.json()
-              paymentDetails.pixCode = pixData.payload
-              paymentDetails.qrCodeUrl = `data:image/png;base64,${pixData.encodedImage}`
-            }
-          } else if (paymentMethod === 'BOLETO') {
+          if (paymentMethod === 'BOLETO') {
             paymentDetails.boletoUrl = charge.bankSlipUrl
             paymentDetails.invoiceUrl = charge.invoiceUrl
             paymentDetails.dueDate = charge.dueDate
