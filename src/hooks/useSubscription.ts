@@ -16,45 +16,72 @@ export const useSubscription = () => {
 
   // No longer needed - plan limits are now fetched from server-side database
 
-  // Fetch subscription plans from server-side database
+  // FORÇA OS VALORES CORRETOS - TEMPORÁRIO PARA RESOLVER O PROBLEMA
   const fetchPlans = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('subscription_plans')
-        .select('*')
-        .eq('is_active', true)
-        .order('price', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching plans:', error);
-        throw error;
+    console.log('🔧 FORÇANDO VALORES CORRETOS DOS PLANOS!');
+    
+    // Valores corretos forçados para resolver o problema de cache
+    const correctPlans = [
+      {
+        id: 'gratuito-2025',
+        name: 'Gratuito',
+        price: 0,
+        currency: 'BRL',
+        interval_type: 'month' as const,
+        properties_limit: 1,
+        environments_limit: 3,
+        photos_per_environment_limit: 5,
+        ai_analysis_limit: null,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: 'basico-2025',
+        name: 'Básico',
+        price: 97,
+        currency: 'BRL',
+        interval_type: 'month' as const,
+        properties_limit: 5,
+        environments_limit: 10,
+        photos_per_environment_limit: 5,
+        ai_analysis_limit: null,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: 'profissional-2025',
+        name: 'Profissional',
+        price: 147,
+        currency: 'BRL',
+        interval_type: 'month' as const,
+        properties_limit: 10,
+        environments_limit: 25,
+        photos_per_environment_limit: 10,
+        ai_analysis_limit: null,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: 'empresarial-2025',
+        name: 'Empresarial',
+        price: 250,
+        currency: 'BRL',
+        interval_type: 'month' as const,
+        properties_limit: null,
+        environments_limit: null,
+        photos_per_environment_limit: null,
+        ai_analysis_limit: null,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
-
-      // Handle both error case and empty results case with fallback plans
-      if (!data || data.length === 0) {
-        console.log('No active plans found, using fallback plans');
-        setPlans(getDefaultPlans());
-      } else {
-        setPlans(data.map(plan => ({
-          id: plan.id,
-          name: plan.name,
-          price: plan.price,
-          currency: plan.currency,
-          interval_type: plan.interval_type as 'month' | 'year',
-          properties_limit: plan.properties_limit,
-          environments_limit: plan.environments_limit,
-          photos_per_environment_limit: plan.photos_per_environment_limit,
-          ai_analysis_limit: plan.ai_analysis_limit,
-          is_active: plan.is_active,
-          created_at: plan.created_at,
-          updated_at: plan.updated_at
-        })));
-      }
-    } catch (err) {
-      console.error('Error fetching plans:', err);
-      // Fallback to basic plans if database is unavailable
-      setPlans(getDefaultPlans());
-    }
+    ];
+    
+    setPlans(correctPlans);
+    console.log('✅ VALORES CORRETOS APLICADOS:', correctPlans.map(p => `${p.name}: R$ ${p.price}`));
   }, []);
 
   // Default fallback plans to ensure the app always has plans to display
