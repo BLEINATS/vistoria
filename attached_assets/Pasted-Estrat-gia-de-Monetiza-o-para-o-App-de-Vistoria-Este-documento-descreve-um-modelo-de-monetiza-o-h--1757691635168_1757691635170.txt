@@ -1,0 +1,47 @@
+Estratégia de Monetização para o App de Vistoria
+Este documento descreve um modelo de monetização híbrido, projetado para atender tanto usuários esporádicos quanto clientes de alto volume, garantindo flexibilidade e previsibilidade de receita.
+1. Sumário Executivo O objetivo é implementar dois modelos de cobrança distintos para capturar diferentes segmentos do mercado:
+Uso Avulso (Pay-Per-Use): Focado em usuários que realizam poucas vistorias anuais. A cobrança é feita por Imóvel cadastrado para vistorias.
+Assinatura Mensal: Focado em empresas (imobiliárias, administradoras) que realizam um alto volume de vistorias. A cobrança é recorrente e oferece um volume maior de laudos por um custo-benefício superior.
+Essa abordagem híbrida reduz a barreira de entrada para novos clientes e cria uma receita mensal recorrente (MRR) dos clientes corporativos.
+2. Modelos de Cobrança Detalhados Modelo 1: Uso Avulso (Pay-Per-Use) Este modelo funciona com um sistema de créditos, onde o cadastro de 1 Imóvel dá direito a 1 vistoria completa para esse imóvel.
+Público-alvo:
+Proprietários de imóveis que alugam por conta própria.
+Pequenos investidores imobiliários.
+Pessoas físicas precisando de um laudo pontual.
+Como Funciona:
+O usuário se cadastra gratuitamente na plataforma.
+Para realizar uma vistoria, ele precisa comprar créditos para cadastrar um imóvel.
+Os créditos não têm data de validade.
+Sugestão de Estrutura de Preços (Exemplos):
+1 Crédito de Imóvel: R$ 49,90
+Pacote 3 Créditos de Imóvel: R$ 119,90 (R$ 39,96 por imóvel - 20% de desconto)
+Pacote 5 Créditos de Imóvel: R$ 174,90 (R$ 34,98 por imóvel - 30% de desconto)
+Vantagens:
+Sem compromisso: Atrai clientes que não querem uma mensalidade.
+Entrada fácil: Permite que qualquer pessoa teste e use o serviço com um custo baixo.
+Modelo 2: Planos de Assinatura Mensal
+Este modelo oferece planos com limites mensais de vistorias e, potencialmente, recursos adicionais.
+Público-alvo:
+Imobiliárias e corretores autônomos.
+Administradoras de condomínios.
+Empresas especializadas em vistorias.
+Como Funciona:
+O cliente escolhe um plano e paga uma taxa mensal recorrente.
+O plano dá direito a um número específico de vistorias por mês.
+Vistorias não utilizadas em um mês não acumulam para o próximo (isso incentiva o uso e a escolha do plano correto).
+Sugestão de Estrutura de Planos (Exemplos):
+Plano Básico
+Preço: R$ 97,00/mês
+Limite: Até 5 imóveis/mes
+Recursos: Todas as funcionalidades padrão.
+Plano Profissional (Mais Popular)
+Preço: R$ 147,00/mês
+Limite: Até 10 Imóveis
+Plano Empresarial
+Preço: R$ 170,00/mês
+Limite: ilimitado/mês
+Recursos Adicionais:
+Tudo do Profissional.
+continua Gratis o mesmo : 1 propriedade
+3 ambientes por propriedade. O sistema ja precisa estar pronto para receber os pagtos pela plataforma asaas que ja temos API instalado no Replit 
