@@ -19,6 +19,18 @@ A React/TypeScript application for property inspections with Supabase backend in
 - ✅ Application running successfully
 - ✅ Deployment configuration set up (autoscale with build/serve)
 - ✅ Host blocking issue resolved
+- ✅ **COMPLETE MONETIZATION SYSTEM IMPLEMENTED**: Full subscription and pay-per-use model with security
+
+## Recent Changes (2025-09-12)
+- ✅ **🚀 COMPLETE MONETIZATION SYSTEM**: Implemented comprehensive subscription and pay-per-use model
+  - **Subscription Plans**: Gratuito (free), Básico (R$97/mês), Profissional (R$147/mês), Empresarial (R$170/mês)
+  - **Pay-per-use Credits**: R$49.90 per property with credit packages (1, 3, 5 credits with discounts)
+  - **Plan Limits**: Enforced server-side limits for properties, environments, and photos per plan
+  - **Security System**: Implemented PlanSecurityGuard component to prevent unauthorized access
+  - **Server-side Validation**: All subscription verification moved from localStorage to secure database RPCs
+  - **Credit Management**: Complete credit system with purchase, usage tracking, and balance management
+  - **Asaas Integration**: Ready for payment processing with existing infrastructure
+  - **Database Infrastructure**: Created user_credits, credit_transactions tables with proper RLS policies
 
 ## Recent Changes (2025-09-11)
 - ✅ **Fixed deployment health check issues**: Applied all suggested fixes for deployment failures
