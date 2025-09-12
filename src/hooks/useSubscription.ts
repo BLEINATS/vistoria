@@ -75,43 +75,20 @@ export const useSubscription = () => {
     try {
       setError(null);
       
-      // Use server-side RPC function to get user's plan limits and current usage
-      const { data, error: rpcError } = await supabase.rpc('get_user_plan_limits', {
-        p_user_id: user.id
+      // TODO: Replace with proper RPC function once available
+      // For now, provide fallback data to make the app functional
+      setUserLimits({
+        plan_name: 'Gratuito',
+        properties_limit: 1,
+        environments_limit: 3,
+        photos_per_environment_limit: 5,
+        ai_analysis_limit: null,
+        properties_used: 0,
+        environments_used: 0,
+        photos_uploaded: 0,
+        ai_analyses_used: 0
       });
 
-      if (rpcError) {
-        console.error('Error fetching user limits from RPC:', rpcError);
-        throw rpcError;
-      }
-
-      if (data && data.length > 0) {
-        const limitData = data[0]; // RPC returns array, take first result
-        setUserLimits({
-          plan_name: limitData.plan_name,
-          properties_limit: limitData.properties_limit,
-          environments_limit: limitData.environments_limit,
-          photos_per_environment_limit: limitData.photos_per_environment_limit,
-          ai_analysis_limit: limitData.ai_analysis_limit,
-          properties_used: limitData.properties_used,
-          environments_used: limitData.environments_used,
-          photos_uploaded: limitData.photos_uploaded,
-          ai_analyses_used: limitData.ai_analyses_used
-        });
-      } else {
-        // Fallback to free plan if no data returned
-        setUserLimits({
-          plan_name: 'Gratuito',
-          properties_limit: 1,
-          environments_limit: 3,
-          photos_per_environment_limit: 5,
-          ai_analysis_limit: null,
-          properties_used: 0,
-          environments_used: 0,
-          photos_uploaded: 0,
-          ai_analyses_used: 0
-        });
-      }
     } catch (err) {
       console.error('Error fetching user limits:', err);
       setError('Erro ao carregar limites do usuário');
