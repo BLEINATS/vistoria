@@ -7,10 +7,11 @@ interface WebhookEvent {
   payment?: {
     id: string
     customer: string
-    subscription: string
+    subscription?: string // Optional for one-time payments
     status: string
     value: number
     billingType: string
+    externalReference?: string // For credit payment tracking
   }
   subscription?: {
     id: string
@@ -59,43 +60,83 @@ serve(async (req) => {
     switch (webhookEvent.event) {
       case 'PAYMENT_RECEIVED':
       case 'PAYMENT_CONFIRMED':
-        // Payment was successful - activate subscription
-        if (webhookEvent.payment?.subscription) {
-          const { error: updateError } = await supabase
-            .from('subscriptions')
-            .update({
-              status: 'ACTIVE',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('asaas_subscription_id', webhookEvent.payment.subscription)
+        // Payment was successful
+        if (webhookEvent.payment) {
+          // Check if this is a subscription payment
+          if (webhookEvent.payment.subscription) {
+            // Handle subscription payment
+            const { error: updateError } = await supabase
+              .from('subscriptions')
+              .update({
+                status: 'ACTIVE',
+                updated_at: new Date().toISOString(),
+              })
+              .eq('asaas_subscription_id', webhookEvent.payment.subscription)
 
-          if (updateError) {
-            console.error('Error updating subscription status:', updateError)
-            throw updateError
+            if (updateError) {
+              console.error('Error updating subscription status:', updateError)
+              throw updateError
+            }
+
+            console.log('Subscription activated:', webhookEvent.payment.subscription)
+          } else {
+            // Check if this is a credit payment (one-time payment)
+            const { data: creditPaymentProcessed, error: creditError } = await supabase
+              .rpc('process_credit_payment_confirmation', {
+                p_asaas_payment_id: webhookEvent.payment.id
+              })
+
+            if (creditError) {
+              console.error('Error processing credit payment:', creditError)
+              throw creditError
+            }
+
+            if (creditPaymentProcessed) {
+              console.log('Credit payment confirmed and credits added:', webhookEvent.payment.id)
+            } else {
+              console.log('No pending credit payment found for payment ID:', webhookEvent.payment.id)
+            }
           }
-
-          console.log('Subscription activated:', webhookEvent.payment.subscription)
         }
         break
 
       case 'PAYMENT_OVERDUE':
       case 'PAYMENT_DELETED':
-        // Payment failed - suspend subscription
-        if (webhookEvent.payment?.subscription) {
-          const { error: updateError } = await supabase
-            .from('subscriptions')
-            .update({
-              status: 'SUSPENDED',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('asaas_subscription_id', webhookEvent.payment.subscription)
+        // Payment failed
+        if (webhookEvent.payment) {
+          // Check if this is a subscription payment
+          if (webhookEvent.payment.subscription) {
+            // Handle subscription payment failure
+            const { error: updateError } = await supabase
+              .from('subscriptions')
+              .update({
+                status: 'SUSPENDED',
+                updated_at: new Date().toISOString(),
+              })
+              .eq('asaas_subscription_id', webhookEvent.payment.subscription)
 
-          if (updateError) {
-            console.error('Error updating subscription status:', updateError)
-            throw updateError
+            if (updateError) {
+              console.error('Error updating subscription status:', updateError)
+              throw updateError
+            }
+
+            console.log('Subscription suspended:', webhookEvent.payment.subscription)
+          } else {
+            // Handle credit payment failure
+            const { data: creditPaymentFailed, error: creditError } = await supabase
+              .rpc('process_credit_payment_failure', {
+                p_asaas_payment_id: webhookEvent.payment.id
+              })
+
+            if (creditError) {
+              console.error('Error processing credit payment failure:', creditError)
+              throw creditError
+            }
+
+            if (creditPaymentFailed) {
+              console.log('Credit payment marked as failed:', webhookEvent.payment.id)
+            }
           }
-
-          console.log('Subscription suspended:', webhookEvent.payment.subscription)
         }
         break
 

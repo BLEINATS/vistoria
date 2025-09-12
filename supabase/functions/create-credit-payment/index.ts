@@ -8,9 +8,17 @@ const corsHeaders = {
   'Access-Control-Max-Age': '86400',
 }
 
-interface CreateSubscriptionRequest {
-  planId: string
+interface CreateCreditPaymentRequest {
+  packageId: string
   paymentMethod: 'PIX' | 'BOLETO' | 'CREDIT_CARD'
+}
+
+interface CreditPackage {
+  id: string
+  name: string
+  credits: number
+  price: number
+  discount: number
 }
 
 interface AsaasCustomer {
@@ -19,20 +27,9 @@ interface AsaasCustomer {
   email: string
 }
 
-interface AsaasSubscription {
-  id: string
-  customer: string
-  billingType: string
-  cycle: string
-  value: number
-  nextDueDate: string
-  status: string
-}
-
 interface AsaasPayment {
   id: string
   customer: string
-  subscription: string
   status: string
   value: number
   dueDate: string
@@ -113,7 +110,7 @@ serve(async (req) => {
     }
 
     // Parse and validate request body
-    let requestData: CreateSubscriptionRequest
+    let requestData: CreateCreditPaymentRequest
     try {
       requestData = await req.json()
     } catch (error) {
@@ -126,7 +123,7 @@ serve(async (req) => {
       )
     }
 
-    const { planId, paymentMethod } = requestData
+    const { packageId, paymentMethod } = requestData
 
     // Validate paymentMethod server-side to prevent manipulation
     const validPaymentMethods: Array<'PIX' | 'BOLETO' | 'CREDIT_CARD'> = ['PIX', 'BOLETO', 'CREDIT_CARD']
@@ -143,12 +140,49 @@ serve(async (req) => {
       )
     }
 
-    // Validate planId format to prevent injection attacks
-    if (!planId || typeof planId !== 'string' || planId.trim().length === 0) {
+    // Validate packageId format to prevent injection attacks
+    if (!packageId || typeof packageId !== 'string' || packageId.trim().length === 0) {
       return new Response(
-        JSON.stringify({ error: 'Invalid plan ID - must be a non-empty string' }),
+        JSON.stringify({ error: 'Invalid package ID - must be a non-empty string' }),
         {
           status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
+    // Define credit packages server-side for security (prevent client manipulation)
+    const CREDIT_PACKAGES: CreditPackage[] = [
+      {
+        id: 'credit-1',
+        name: '1 Crédito',
+        credits: 1,
+        price: 49.90,
+        discount: 0
+      },
+      {
+        id: 'credit-3',
+        name: 'Pacote 3 Créditos',
+        credits: 3,
+        price: 119.90,
+        discount: 20
+      },
+      {
+        id: 'credit-5',
+        name: 'Pacote 5 Créditos',
+        credits: 5,
+        price: 174.90,
+        discount: 30
+      }
+    ];
+
+    // Find selected package server-side (never trust client data)
+    const selectedPackage = CREDIT_PACKAGES.find(pkg => pkg.id === packageId)
+    if (!selectedPackage) {
+      return new Response(
+        JSON.stringify({ error: 'Credit package not found' }),
+        {
+          status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
@@ -173,24 +207,6 @@ serve(async (req) => {
         JSON.stringify({ error: 'User email is required' }),
         {
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
-    }
-
-    // Get plan details
-    const { data: plan, error: planError } = await supabase
-      .from('subscription_plans')
-      .select('*')
-      .eq('id', planId)
-      .single()
-
-    if (planError || !plan) {
-      console.error('Plan not found:', planError)
-      return new Response(
-        JSON.stringify({ error: 'Subscription plan not found' }),
-        {
-          status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
@@ -265,33 +281,33 @@ serve(async (req) => {
       )
     }
 
-    // Create subscription in Asaas
-    const nextDueDate = new Date()
-    nextDueDate.setDate(nextDueDate.getDate() + 1) // Tomorrow
+    // Create one-time payment in Asaas (not subscription)
+    const dueDate = new Date()
+    dueDate.setDate(dueDate.getDate() + 3) // 3 days from now
     
-    const subscriptionPayload = {
+    const paymentPayload = {
       customer: asaasCustomer.id,
       billingType: paymentMethod,
-      cycle: 'MONTHLY',
-      value: plan.price,
-      description: `VistorIA - Plano ${plan.name}`,
-      nextDueDate: nextDueDate.toISOString().split('T')[0],
+      value: selectedPackage.price,
+      dueDate: dueDate.toISOString().split('T')[0],
+      description: `VistorIA - ${selectedPackage.name}`,
+      externalReference: `credits_${user.id}_${Date.now()}`, // For webhook tracking
     }
 
-    const subscriptionResponse = await fetch('https://api.asaas.com/v3/subscriptions', {
+    const paymentResponse = await fetch('https://api.asaas.com/v3/payments', {
       method: 'POST',
       headers: {
         'access_token': asaasApiKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(subscriptionPayload),
+      body: JSON.stringify(paymentPayload),
     })
 
-    if (!subscriptionResponse.ok) {
-      const errorText = await subscriptionResponse.text()
-      console.error('Failed to create subscription:', errorText)
+    if (!paymentResponse.ok) {
+      const errorText = await paymentResponse.text()
+      console.error('Failed to create payment:', errorText)
       return new Response(
-        JSON.stringify({ error: 'Failed to create subscription' }),
+        JSON.stringify({ error: 'Failed to create payment' }),
         {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -299,23 +315,35 @@ serve(async (req) => {
       )
     }
 
-    const asaasSubscription: AsaasSubscription = await subscriptionResponse.json()
+    const asaasPayment: AsaasPayment = await paymentResponse.json()
 
-    // Store subscription in our database using RPC function
-    const { error: dbError } = await supabase.rpc('create_user_subscription', {
-      user_uuid: user.id,
-      plan_name_param: plan.name,
-      price_param: plan.price,
-      asaas_subscription_id_param: asaasSubscription.id,
-      asaas_customer_id_param: asaasCustomer.id,
-      status_param: 'PENDING',
-      billing_type_param: paymentMethod
-    })
+    // Store payment record in database using service role for security
+    const serviceSupabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // Create pending credit payment record (credits added only after webhook confirmation)
+    const { error: dbError } = await serviceSupabase
+      .from('credit_payments')
+      .insert({
+        user_id: user.id,
+        asaas_payment_id: asaasPayment.id,
+        asaas_customer_id: asaasCustomer.id,
+        package_id: selectedPackage.id,
+        package_name: selectedPackage.name,
+        credits_amount: selectedPackage.credits,
+        amount: selectedPackage.price,
+        payment_method: paymentMethod,
+        status: 'PENDING',
+        external_reference: paymentPayload.externalReference,
+        created_at: new Date().toISOString(),
+      })
 
     if (dbError) {
       console.error('Database error:', dbError)
       return new Response(
-        JSON.stringify({ error: 'Failed to save subscription data' }),
+        JSON.stringify({ error: 'Failed to save payment data' }),
         {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -323,51 +351,32 @@ serve(async (req) => {
       )
     }
 
-    // Get payment details for the first charge
+    // Get payment details for the response
     let paymentDetails: any = {
-      subscriptionId: asaasSubscription.id,
+      paymentId: asaasPayment.id,
       paymentMethod,
+      dueDate: asaasPayment.dueDate,
+      status: asaasPayment.status,
     }
 
     try {
-      // Wait a moment for the payment to be created
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      const chargeResponse = await fetch(`https://api.asaas.com/v3/payments?subscription=${asaasSubscription.id}&limit=1`, {
-        headers: {
-          'access_token': asaasApiKey,
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (chargeResponse.ok) {
-        const charges = await chargeResponse.json()
-        if (charges.data && charges.data.length > 0) {
-          const charge: AsaasPayment = charges.data[0]
-          
-          if (paymentMethod === 'PIX') {
-            // Get PIX details
-            const pixResponse = await fetch(`https://api.asaas.com/v3/payments/${charge.id}/pixQrCode`, {
-              headers: {
-                'access_token': asaasApiKey,
-                'Content-Type': 'application/json',
-              },
-            })
-            
-            if (pixResponse.ok) {
-              const pixData: AsaasPixData = await pixResponse.json()
-              paymentDetails.pixCode = pixData.payload
-              paymentDetails.qrCodeUrl = `data:image/png;base64,${pixData.encodedImage}`
-            }
-          } else if (paymentMethod === 'BOLETO') {
-            paymentDetails.boletoUrl = charge.bankSlipUrl
-            paymentDetails.invoiceUrl = charge.invoiceUrl
-            paymentDetails.dueDate = charge.dueDate
-          } else if (paymentMethod === 'CREDIT_CARD') {
-            paymentDetails.chargeId = charge.id
-            paymentDetails.status = charge.status
-          }
+      if (paymentMethod === 'PIX') {
+        // Get PIX details
+        const pixResponse = await fetch(`https://api.asaas.com/v3/payments/${asaasPayment.id}/pixQrCode`, {
+          headers: {
+            'access_token': asaasApiKey,
+            'Content-Type': 'application/json',
+          },
+        })
+        
+        if (pixResponse.ok) {
+          const pixData: AsaasPixData = await pixResponse.json()
+          paymentDetails.pixCode = pixData.payload
+          paymentDetails.qrCodeUrl = `data:image/png;base64,${pixData.encodedImage}`
         }
+      } else if (paymentMethod === 'BOLETO') {
+        paymentDetails.boletoUrl = asaasPayment.bankSlipUrl
+        paymentDetails.invoiceUrl = asaasPayment.invoiceUrl
       }
     } catch (paymentError) {
       console.error('Error fetching payment details:', paymentError)
@@ -377,13 +386,12 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Assinatura ${plan.name} criada com sucesso!`,
-        subscription: {
-          id: asaasSubscription.id,
-          planName: plan.name,
-          price: plan.price,
-          status: 'PENDING',
-          nextDueDate: asaasSubscription.nextDueDate,
+        message: `Pagamento para ${selectedPackage.name} criado com sucesso!`,
+        package: {
+          id: selectedPackage.id,
+          name: selectedPackage.name,
+          credits: selectedPackage.credits,
+          price: selectedPackage.price,
         },
         payment: paymentDetails,
       }),

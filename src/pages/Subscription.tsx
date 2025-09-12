@@ -4,10 +4,12 @@ import { useSubscription } from '../hooks/useSubscription';
 import { useSubscriptionManagement } from '../hooks/useSubscriptionManagement';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import { useCredits } from '../hooks/useCredits';
 import { ArrowLeft, Check, CreditCard, FileText, Zap, Crown, Sparkles, Star } from 'lucide-react';
 import PaymentModal from '../components/Subscription/PaymentModal';
 import PaymentSuccessModal from '../components/Subscription/PaymentSuccessModal';
 import CreditPackages from '../components/Subscription/CreditPackages';
+import type { CreditPackage } from '../hooks/useCredits';
 // import UsageIndicator from '../components/Subscription/UsageIndicator';
 
 const Subscription: React.FC = () => {
@@ -15,6 +17,7 @@ const Subscription: React.FC = () => {
   const { user } = useAuth();
   const { plans, userLimits, loading, getRemainingUsage } = useSubscription();
   const { createSubscription, simulateUpgrade, loading: upgradeLoading } = useSubscriptionManagement();
+  const { purchaseCredits, loading: creditLoading } = useCredits();
   const { addToast } = useToast();
   
   // Check URL params for tab selection
@@ -24,16 +27,21 @@ const Subscription: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [planToUpgrade, setPlanToUpgrade] = useState<any>(null);
+  const [packageToPurchase, setPackageToPurchase] = useState<CreditPackage | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successData, setSuccessData] = useState<{
-    subscriptionId: string, 
-    paymentMethod: 'PIX' | 'BOLETO' | 'CREDIT_CARD', 
-    planName: string,
-    pixCode?: string,
-    qrCodeUrl?: string,
-    boletoUrl?: string,
-    invoiceUrl?: string,
-    dueDate?: string
+    type: 'subscription' | 'credits';
+    subscriptionId?: string;
+    paymentId?: string;
+    paymentMethod: 'PIX' | 'BOLETO' | 'CREDIT_CARD';
+    planName?: string;
+    packageName?: string;
+    credits?: number;
+    pixCode?: string;
+    qrCodeUrl?: string;
+    boletoUrl?: string;
+    invoiceUrl?: string;
+    dueDate?: string;
   } | null>(null);
 
   const handleUpgrade = async (planId: string) => {
@@ -64,35 +72,69 @@ const Subscription: React.FC = () => {
   };
 
   const handlePaymentConfirm = async (paymentMethod: 'PIX' | 'BOLETO' | 'CREDIT_CARD') => {
-    if (!planToUpgrade) return;
-    
-    const result = await createSubscription(planToUpgrade, paymentMethod);
-    
-    if (result.success) {
-      setShowPaymentModal(false);
-      setPlanToUpgrade(null);
+    if (planToUpgrade) {
+      // Handle subscription payment
+      const result = await createSubscription(planToUpgrade, paymentMethod);
       
-      // Show success modal with payment details
-      setSuccessData({
-        subscriptionId: result.subscriptionId || '',
-        paymentMethod,
-        planName: planToUpgrade.name,
-        // Real payment data from backend
-        pixCode: result.pixCode,
-        qrCodeUrl: result.qrCodeUrl,
-        boletoUrl: result.boletoUrl,
-        invoiceUrl: result.invoiceUrl,
-        dueDate: result.dueDate,
-      });
-      setShowSuccessModal(true);
-    } else {
-      addToast(result.message, 'error');
+      if (result.success) {
+        setShowPaymentModal(false);
+        setPlanToUpgrade(null);
+        
+        // Show success modal with payment details
+        setSuccessData({
+          type: 'subscription',
+          subscriptionId: result.subscriptionId || '',
+          paymentMethod,
+          planName: planToUpgrade.name,
+          // Real payment data from backend
+          pixCode: result.pixCode,
+          qrCodeUrl: result.qrCodeUrl,
+          boletoUrl: result.boletoUrl,
+          invoiceUrl: result.invoiceUrl,
+          dueDate: result.dueDate,
+        });
+        setShowSuccessModal(true);
+      } else {
+        addToast(result.message, 'error');
+      }
+    } else if (packageToPurchase) {
+      // Handle credit package payment
+      const result = await purchaseCredits(packageToPurchase.id, paymentMethod);
+      
+      if (result.success) {
+        setShowPaymentModal(false);
+        setPackageToPurchase(null);
+        
+        // Show success modal with payment details
+        setSuccessData({
+          type: 'credits',
+          paymentId: result.paymentId || '',
+          paymentMethod,
+          packageName: packageToPurchase.name,
+          credits: packageToPurchase.credits,
+          // Real payment data from backend
+          pixCode: result.pixCode,
+          qrCodeUrl: result.qrCodeUrl,
+          boletoUrl: result.boletoUrl,
+          invoiceUrl: result.invoiceUrl,
+          dueDate: result.dueDate,
+        });
+        setShowSuccessModal(true);
+      } else {
+        addToast(result.message, 'error');
+      }
     }
   };
 
   const handleClosePaymentModal = () => {
     setShowPaymentModal(false);
     setPlanToUpgrade(null);
+    setPackageToPurchase(null);
+  };
+
+  const handleCreditPackageSelect = (pkg: CreditPackage) => {
+    setPackageToPurchase(pkg);
+    setShowPaymentModal(true);
   };
 
   const getPlanIcon = (planName: string) => {
@@ -407,11 +449,8 @@ const Subscription: React.FC = () => {
             </div>
             
             <CreditPackages 
-              onSelectPackage={(pkg) => {
-                // TODO: Implement credit package purchase
-                addToast(`Compra de ${pkg.name} em desenvolvimento!`, 'success');
-              }}
-              loading={false}
+              onSelectPackage={handleCreditPackageSelect}
+              loading={creditLoading}
             />
             
             {/* Benefits for Credits */}
@@ -451,9 +490,15 @@ const Subscription: React.FC = () => {
       <PaymentModal
         isOpen={showPaymentModal}
         onClose={handleClosePaymentModal}
-        plan={planToUpgrade}
+        plan={planToUpgrade || (packageToPurchase ? {
+          name: packageToPurchase.name,
+          price: packageToPurchase.price,
+          properties_limit: packageToPurchase.credits,
+          environments_limit: null,
+          photos_per_environment_limit: null
+        } : null)}
         onConfirm={handlePaymentConfirm}
-        loading={upgradeLoading}
+        loading={upgradeLoading || creditLoading}
       />
 
       {/* Payment Success Modal */}
@@ -466,9 +511,9 @@ const Subscription: React.FC = () => {
             // Optionally refresh after closing success modal
             setTimeout(() => window.location.reload(), 1000);
           }}
-          subscriptionId={successData.subscriptionId}
+          subscriptionId={successData.subscriptionId || successData.paymentId || ''}
           paymentMethod={successData.paymentMethod}
-          planName={successData.planName}
+          planName={successData.planName || successData.packageName || ''}
           pixCode={successData.pixCode}
           qrCodeUrl={successData.qrCodeUrl}
           boletoUrl={successData.boletoUrl}

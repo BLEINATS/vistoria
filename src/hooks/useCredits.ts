@@ -129,36 +129,70 @@ export const useCredits = () => {
     }
   }, [user, fetchUserCredits]);
 
-  // Add credits (after purchase) using server-side RPC function
-  const addCredits = useCallback(async (credits: number, asaasPaymentId?: string, description?: string): Promise<boolean> => {
-    if (!user) return false;
+  // Purchase credits through secure backend (no direct credit addition allowed)
+  const purchaseCredits = useCallback(async (packageId: string, paymentMethod: 'PIX' | 'BOLETO' | 'CREDIT_CARD'): Promise<{
+    success: boolean;
+    message: string;
+    paymentId?: string;
+    pixCode?: string;
+    qrCodeUrl?: string;
+    boletoUrl?: string;
+    invoiceUrl?: string;
+    dueDate?: string;
+  }> => {
+    if (!user) {
+      return { success: false, message: 'Usuário não autenticado' };
+    }
 
     try {
       setError(null);
       
-      // Use server-side RPC function to add credits
-      const { data, error: rpcError } = await supabase.rpc('add_credits', {
-        p_user_id: user.id,
-        p_credits: credits,
-        p_asaas_payment_id: asaasPaymentId || null,
-        p_description: description || 'Credit purchase'
-      });
-
-      if (rpcError) {
-        console.error('Error adding credits:', rpcError);
-        setError('Erro ao adicionar créditos');
-        return false;
+      // Call secure backend function for credit purchase
+      const { data: authData } = await supabase.auth.getSession();
+      if (!authData.session?.access_token) {
+        return { success: false, message: 'Sessão expirada' };
       }
 
-      // Refresh credit balance after adding credits
-      await fetchUserCredits();
-      return data; // Should return true if successful
+      const response = await fetch(`${(import.meta as any).env.VITE_SUPABASE_URL}/functions/v1/create-credit-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authData.session.access_token}`,
+        },
+        body: JSON.stringify({
+          packageId,
+          paymentMethod,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro ao processar pagamento');
+      }
+
+      if (result.success) {
+        // Payment created successfully, credits will be added after webhook confirmation
+        return {
+          success: true,
+          message: result.message,
+          paymentId: result.payment?.paymentId,
+          pixCode: result.payment?.pixCode,
+          qrCodeUrl: result.payment?.qrCodeUrl,
+          boletoUrl: result.payment?.boletoUrl,
+          invoiceUrl: result.payment?.invoiceUrl,
+          dueDate: result.payment?.dueDate,
+        };
+      } else {
+        return { success: false, message: result.message || 'Erro desconhecido' };
+      }
     } catch (error) {
-      console.error('Error adding credits:', error);
-      setError('Erro ao adicionar créditos');
-      return false;
+      console.error('Error purchasing credits:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao comprar créditos';
+      setError(errorMessage);
+      return { success: false, message: errorMessage };
     }
-  }, [user, fetchUserCredits]);
+  }, [user]);
 
   // Check if user can perform action (requires credit) using server-side validation
   const canUseCredit = useCallback(async (): Promise<boolean> => {
@@ -198,7 +232,7 @@ export const useCredits = () => {
     loading,
     error,
     useCredit,
-    addCredits,
+    purchaseCredits,
     canUseCredit,
     getCreditPrice,
     refetchCredits: fetchUserCredits
