@@ -1,0 +1,39 @@
+Error fetching user credits from RPC: 
+Object {code: "PGRST202", details: "Searched for the function public.get_user_credits with parameter p_user_id or with a single unnamed…", hint: "Perhaps you meant to call the function public.use_user_credit", message: "Could not find the function public.get_user_credits(p_user_id) in the schema cache"}
+
+Error fetching user credits: 
+Object {code: "PGRST202", details: "Searched for the function public.get_user_credits with parameter p_user_id or with a single unnamed…", hint: "Perhaps you meant to call the function public.use_user_credit", message: "Could not find the function public.get_user_credits(p_user_id) in the schema cache"}
+
+Error fetching user limits from RPC: 
+Object {code: "PGRST202", details: "Searched for the function public.get_user_plan_limits with parameter p_user_id or with a single…", hint: "Perhaps you meant to call the function public.get_all_users_with_details", message: "Could not find the function public.get_user_plan_limits(p_user_id) in the schema cache"}
+
+Error fetching user limits: 
+Object {code: "PGRST202", details: "Searched for the function public.get_user_plan_limits with parameter p_user_id or with a single…", hint: "Perhaps you meant to call the function public.get_all_users_with_details", message: "Could not find the function public.get_user_plan_limits(p_user_id) in the schema cache"}
+
+Error fetching user limits from RPC: 
+Object {code: "PGRST202", details: "Searched for the function public.get_user_plan_limits with parameter p_user_id or with a single…", hint: "Perhaps you meant to call the function public.get_all_users_with_details", message: "Could not find the function public.get_user_plan_limits(p_user_id) in the schema cache"}
+
+Error fetching user limits: 
+Object {code: "PGRST202", details: "Searched for the function public.get_user_plan_limits with parameter p_user_id or with a single…", hint: "Perhaps you meant to call the function public.get_all_users_with_details", message: "Could not find the function public.get_user_plan_limits(p_user_id) in the schema cache"}
+
+Error fetching user limits from RPC: 
+Object {code: "PGRST202", details: "Searched for the function public.get_user_plan_limits with parameter p_user_id or with a single…", hint: "Perhaps you meant to call the function public.get_all_users_with_details", message: "Could not find the function public.get_user_plan_limits(p_user_id) in the schema cache"}
+
+Error fetching user limits: 
+Object {code: "PGRST202", details: "Searched for the function public.get_user_plan_limits with parameter p_user_id or with a single…", hint: "Perhaps you meant to call the function public.get_all_users_with_details", message: "Could not find the function public.get_user_plan_limits(p_user_id) in the schema cache"}
+
+Error fetching user limits from RPC: 
+Object {code: "PGRST202", details: "Searched for the function public.get_user_plan_limits with parameter p_user_id or with a single…", hint: "Perhaps you meant to call the function public.get_all_users_with_details", message: "Could not find the function public.get_user_plan_limits(p_user_id) in the schema cache"}
+
+Error fetching user limits: 
+Object {code: "PGRST202", details: "Searched for the function public.get_user_plan_limits with parameter p_user_id or with a single…", hint: "Perhaps you meant to call the function public.get_all_users_with_details", message: "Could not find the function public.get_user_plan_limits(p_user_id) in the schema cache"}
+code: "PGRST202"
+details: "Searched for the function public.get_user_plan_limits with parameter p_user_id or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache."
+hint: "Perhaps you meant to call the function public.get_all_users_with_details"
+message: "Could not find the function public.get_user_plan_limits(p_user_id) in the schema cache"
+[[Prototype]]: Object
+
+at t.value (https://7e0a76d0-c34a-402b-8676-c7c2937d7253-00-121g2wo51n8xm.riker.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://7e0a76d0-c34a-402b-8676-c7c2937d7253-00-121g2wo51n8xm.riker.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://7e0a76d0-c34a-402b-8676-c7c2937d7253-00-121g2wo51n8xm.riker.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://7e0a76d0-c34a-402b-8676-c7c2937d7253-00-121g2wo51n8xm.riker.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
