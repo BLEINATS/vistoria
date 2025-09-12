@@ -110,8 +110,49 @@ export const useSubscription = () => {
     try {
       setError(null);
       
-      // TODO: Replace with proper RPC function once available
-      // For now, provide fallback data to make the app functional
+      // Get real user limits and usage from database via RPC
+      const { data, error } = await supabase.rpc('get_user_limits', {
+        p_user_id: user.id
+      });
+
+      if (error) {
+        console.error('Error fetching user limits:', error);
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        const userLimitsData = data[0];
+        setUserLimits({
+          plan_name: userLimitsData.plan_name,
+          properties_limit: userLimitsData.properties_limit,
+          environments_limit: userLimitsData.environments_limit,
+          photos_per_environment_limit: userLimitsData.photos_per_environment_limit,
+          ai_analysis_limit: userLimitsData.ai_analysis_limit,
+          properties_used: userLimitsData.properties_used,
+          environments_used: userLimitsData.environments_used,
+          photos_uploaded: userLimitsData.photos_uploaded,
+          ai_analyses_used: userLimitsData.ai_analyses_used
+        });
+      } else {
+        // Fallback if no data is returned
+        setUserLimits({
+          plan_name: 'Gratuito',
+          properties_limit: 1,
+          environments_limit: 3,
+          photos_per_environment_limit: 5,
+          ai_analysis_limit: null,
+          properties_used: 0,
+          environments_used: 0,
+          photos_uploaded: 0,
+          ai_analyses_used: 0
+        });
+      }
+
+    } catch (err) {
+      console.error('Error fetching user limits:', err);
+      setError('Erro ao carregar limites do usuário');
+      
+      // Provide fallback data on error
       setUserLimits({
         plan_name: 'Gratuito',
         properties_limit: 1,
@@ -123,10 +164,6 @@ export const useSubscription = () => {
         photos_uploaded: 0,
         ai_analyses_used: 0
       });
-
-    } catch (err) {
-      console.error('Error fetching user limits:', err);
-      setError('Erro ao carregar limites do usuário');
     }
   }, [user]);
 
