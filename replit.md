@@ -23,7 +23,7 @@ A React/TypeScript application for property inspections with Supabase backend in
 
 ## Recent Changes (2025-09-12)
 - ✅ **🚀 COMPLETE MONETIZATION SYSTEM**: Implemented comprehensive subscription and pay-per-use model
-  - **Subscription Plans**: Gratuito (free), Básico (R$97/mês), Profissional (R$147/mês), Empresarial (R$170/mês)
+  - **Subscription Plans**: Gratuito (free), Básico (R$97/mês - 5 imóveis), Profissional (R$147/mês - 10 imóveis), Empresarial (R$250/mês - ilimitado)
   - **Pay-per-use Credits**: R$49.90 per property with credit packages (1, 3, 5 credits with discounts)
   - **Plan Limits**: Enforced server-side limits for properties, environments, and photos per plan
   - **Security System**: Implemented PlanSecurityGuard component to prevent unauthorized access
