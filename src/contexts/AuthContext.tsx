@@ -26,9 +26,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
-      // Timeout que estava funcionando - NÃO REMOVER!
+      // Timeout aumentado para 15 segundos para evitar perda de dados por lentidão
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout na busca do perfil')), 3000);
+        setTimeout(() => reject(new Error('Timeout na busca do perfil')), 15000);
       });
       
       const queryPromise = supabase
@@ -40,15 +40,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
       
       if (error && error.code !== 'PGRST116') {
-        setProfile(null);
+        console.warn('Erro ao buscar perfil, mantendo dados anteriores:', error);
+        // NÃO limpar perfil em caso de erro - manter dados anteriores
+        // setProfile(null); // REMOVIDO para evitar perda de dados
+        
+        // Tentar recuperar do localStorage como fallback
+        const savedProfile = localStorage.getItem(`profile_${userId}`);
+        if (savedProfile && !profile) {
+          setProfile(JSON.parse(savedProfile));
+        }
       } else {
-        setProfile(data ?? null);
+        const newProfile = data ?? null;
+        setProfile(newProfile);
+        
+        // Salvar no localStorage para persistência
+        if (newProfile) {
+          localStorage.setItem(`profile_${userId}`, JSON.stringify(newProfile));
+        }
       }
     } catch (e) {
-      // Se timeout ou erro, continua sem perfil (não trava)
-      setProfile(null);
+      console.warn('Timeout ou erro na busca do perfil, mantendo dados anteriores:', e);
+      // NÃO limpar perfil em caso de timeout - manter dados anteriores
+      // setProfile(null); // REMOVIDO para evitar perda de dados
+      
+      // Tentar recuperar do localStorage como fallback
+      const savedProfile = localStorage.getItem(`profile_${userId}`);
+      if (savedProfile && !profile) {
+        setProfile(JSON.parse(savedProfile));
+      }
     }
-  }, []);
+  }, [profile]);
 
   const refetchProfile = useCallback(async () => {
     if (user) {
@@ -65,6 +86,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(currentUser);
         
         if (currentUser) {
+          // Carregar dados do localStorage primeiro para não deixar interface vazia
+          const savedProfile = localStorage.getItem(`profile_${currentUser.id}`);
+          if (savedProfile) {
+            setProfile(JSON.parse(savedProfile));
+          }
+          
+          // Depois buscar dados atualizados do banco
           await fetchProfile(currentUser.id);
         } else {
           setProfile(null);
@@ -85,6 +113,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(currentUser);
         
         if (currentUser) {
+          // Carregar dados do localStorage primeiro para não deixar interface vazia
+          const savedProfile = localStorage.getItem(`profile_${currentUser.id}`);
+          if (savedProfile) {
+            setProfile(JSON.parse(savedProfile));
+          }
+          
+          // Depois buscar dados atualizados do banco
           await fetchProfile(currentUser.id);
         } else {
           setProfile(null);
