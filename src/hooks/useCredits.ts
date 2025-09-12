@@ -83,33 +83,28 @@ export const useCredits = () => {
     try {
       setError(null);
       
-      // Use server-side RPC function to use a credit
-      const { data, error: rpcError } = await supabase.rpc('use_credit', {
-        p_user_id: user.id,
-        p_property_id: propertyId || null,
-        p_description: description || 'Property inspection'
-      });
-
-      if (rpcError) {
-        console.error('Error using credit:', rpcError);
-        setError('Erro ao usar crédito');
-        return false;
-      }
-
-      if (!data) {
+      // TODO: Replace with proper RPC function once available
+      // For now, simulate credit usage for app functionality
+      if (!userCredits || userCredits.remaining_credits <= 0) {
         setError('Créditos insuficientes. Compre mais créditos para continuar.');
         return false;
       }
 
-      // Refresh credit balance after using a credit
-      await fetchUserCredits();
+      // Simulate credit usage
+      setUserCredits(prev => prev ? {
+        ...prev,
+        used_credits: prev.used_credits + 1,
+        remaining_credits: prev.remaining_credits - 1,
+        last_updated: new Date().toISOString()
+      } : null);
+      
       return true;
     } catch (error) {
       console.error('Error using credit:', error);
       setError('Erro ao usar crédito');
       return false;
     }
-  }, [user, fetchUserCredits]);
+  }, [user, userCredits]);
 
   // Purchase credits through secure backend (no direct credit addition allowed)
   const purchaseCredits = useCallback(async (packageId: string, paymentMethod: 'PIX' | 'BOLETO' | 'CREDIT_CARD'): Promise<{
@@ -181,22 +176,14 @@ export const useCredits = () => {
     if (!user) return false;
 
     try {
-      // Use server-side RPC function to check if user can use credit
-      const { data, error } = await supabase.rpc('can_use_credit', {
-        p_user_id: user.id
-      });
-
-      if (error) {
-        console.error('Error checking credit availability:', error);
-        return false;
-      }
-
-      return data || false;
+      // TODO: Replace with proper RPC function once available
+      // For now, check credit availability from local state
+      return userCredits ? userCredits.remaining_credits > 0 : false;
     } catch (error) {
       console.error('Error checking credit availability:', error);
       return false;
     }
-  }, [user]);
+  }, [user, userCredits]);
 
   // Get credit price per property
   const getCreditPrice = (packageId: string): number => {
