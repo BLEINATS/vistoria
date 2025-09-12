@@ -4,9 +4,10 @@ import { useSubscription } from '../hooks/useSubscription';
 import { useSubscriptionManagement } from '../hooks/useSubscriptionManagement';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { ArrowLeft, Check, CreditCard, FileText, Zap, Crown, Sparkles } from 'lucide-react';
+import { ArrowLeft, Check, CreditCard, FileText, Zap, Crown, Sparkles, Star } from 'lucide-react';
 import PaymentModal from '../components/Subscription/PaymentModal';
 import PaymentSuccessModal from '../components/Subscription/PaymentSuccessModal';
+import CreditPackages from '../components/Subscription/CreditPackages';
 // import UsageIndicator from '../components/Subscription/UsageIndicator';
 
 const Subscription: React.FC = () => {
@@ -15,6 +16,11 @@ const Subscription: React.FC = () => {
   const { plans, userLimits, loading, getRemainingUsage } = useSubscription();
   const { createSubscription, simulateUpgrade, loading: upgradeLoading } = useSubscriptionManagement();
   const { addToast } = useToast();
+  
+  // Check URL params for tab selection
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialTab = urlParams.get('tab') as 'plans' | 'credits' || 'plans';
+  const [activeTab, setActiveTab] = useState<'plans' | 'credits'>(initialTab);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [planToUpgrade, setPlanToUpgrade] = useState<any>(null);
@@ -147,8 +153,34 @@ const Subscription: React.FC = () => {
               Escolha seu Plano
             </h1>
             <p className="text-xl text-white/80 mb-8">
-              Gerencie mais propriedades e tenha acesso a recursos exclusivos
+              Assinatura mensal ou créditos pay-per-use conforme sua necessidade
             </p>
+            
+            {/* Tab Navigation */}
+            <div className="flex justify-center mb-8">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-1 inline-flex">
+                <button
+                  onClick={() => setActiveTab('plans')}
+                  className={`px-6 py-3 rounded-md font-medium transition-all ${
+                    activeTab === 'plans'
+                      ? 'bg-white text-slate-800 shadow-lg'
+                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Planos Mensais
+                </button>
+                <button
+                  onClick={() => setActiveTab('credits')}
+                  className={`px-6 py-3 rounded-md font-medium transition-all ${
+                    activeTab === 'credits'
+                      ? 'bg-white text-slate-800 shadow-lg'
+                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Pay-per-use
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -189,176 +221,230 @@ const Subscription: React.FC = () => {
         </div>
       )}
 
-      {/* Plans */}
+      {/* Content based on active tab */}
       <div className="max-w-6xl mx-auto px-4 pb-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {plans.map((plan) => {
-            const isCurrentPlan = userLimits?.plan_name === plan.name;
-            const isPopular = plan.name === 'Básico';
-            
-            return (
-              <div
-                key={plan.id}
-                className={`relative bg-white/10 backdrop-blur-sm rounded-xl border-2 transition-all duration-300 hover:transform hover:scale-105 ${
-                  isCurrentPlan 
-                    ? 'border-green-400 shadow-2xl shadow-green-400/20' 
-                    : isPopular
-                    ? 'border-blue-400 shadow-2xl shadow-blue-400/20'
-                    : 'border-white/20 hover:border-white/40'
-                }`}
-              >
-                {isPopular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <div className="bg-blue-500 text-white text-sm font-bold px-4 py-1 rounded-full">
-                      MAIS POPULAR
-                    </div>
-                  </div>
-                )}
+        {activeTab === 'plans' ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {plans.map((plan) => {
+                const isCurrentPlan = userLimits?.plan_name === plan.name;
+                const isPopular = plan.name === 'Básico';
                 
-                {isCurrentPlan && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <div className="bg-green-500 text-white text-sm font-bold px-4 py-1 rounded-full">
-                      PLANO ATUAL
-                    </div>
-                  </div>
-                )}
-
-                <div className="p-8">
-                  {/* Plan Header */}
-                  <div className="text-center mb-8">
-                    <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${getPlanColor(plan.name)} flex items-center justify-center mx-auto mb-4 text-white`}>
-                      {getPlanIcon(plan.name)}
-                    </div>
-                    <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
-                    <div className="text-4xl font-bold text-white mb-1">
-                      {plan.price === 0 ? 'Grátis' : `R$ ${plan.price.toFixed(0)}`}
-                    </div>
-                    {plan.price > 0 && (
-                      <p className="text-white/60">por mês</p>
+                return (
+                  <div
+                    key={plan.id}
+                    className={`relative bg-white/10 backdrop-blur-sm rounded-xl border-2 transition-all duration-300 hover:transform hover:scale-105 ${
+                      isCurrentPlan 
+                        ? 'border-green-400 shadow-2xl shadow-green-400/20' 
+                        : isPopular
+                        ? 'border-blue-400 shadow-2xl shadow-blue-400/20'
+                        : 'border-white/20 hover:border-white/40'
+                    }`}
+                  >
+                    {isPopular && (
+                      <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                        <div className="bg-blue-500 text-white text-sm font-bold px-4 py-1 rounded-full">
+                          MAIS POPULAR
+                        </div>
+                      </div>
                     )}
-                  </div>
+                    
+                    {isCurrentPlan && (
+                      <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                        <div className="bg-green-500 text-white text-sm font-bold px-4 py-1 rounded-full">
+                          PLANO ATUAL
+                        </div>
+                      </div>
+                    )}
 
-                  {/* Features */}
-                  <div className="space-y-4 mb-8">
-                    <div className="flex items-center gap-3">
-                      <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
-                      <span className="text-white">
-                        {plan.properties_limit ? `${plan.properties_limit} propriedades` : 'Propriedades ilimitadas'}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
-                      <span className="text-white">
-                        {plan.environments_limit ? `${plan.environments_limit} ambientes por propriedade` : 'Ambientes ilimitados'}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
-                      <span className="text-white">
-                        {plan.photos_per_environment_limit} fotos por ambiente
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
-                      <span className="text-white">
-                        Análise com IA
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
-                      <span className="text-white">
-                        Relatórios comparativos
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
-                      <span className="text-white">
-                        Exportação em PDF
-                      </span>
-                    </div>
+                    <div className="p-8">
+                      {/* Plan Header */}
+                      <div className="text-center mb-8">
+                        <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${getPlanColor(plan.name)} flex items-center justify-center mx-auto mb-4 text-white`}>
+                          {getPlanIcon(plan.name)}
+                        </div>
+                        <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
+                        <div className="text-4xl font-bold text-white mb-1">
+                          {plan.price === 0 ? 'Grátis' : `R$ ${plan.price.toFixed(0)}`}
+                        </div>
+                        {plan.price > 0 && (
+                          <p className="text-white/60">por mês</p>
+                        )}
+                      </div>
 
-                    {plan.name === 'Premium' && (
-                      <>
+                      {/* Features */}
+                      <div className="space-y-4 mb-8">
                         <div className="flex items-center gap-3">
                           <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
                           <span className="text-white">
-                            Suporte prioritário
+                            {plan.properties_limit ? `${plan.properties_limit} propriedades` : 'Propriedades ilimitadas'}
                           </span>
                         </div>
+                        
                         <div className="flex items-center gap-3">
                           <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
                           <span className="text-white">
-                            API para integrações
+                            {plan.environments_limit ? `${plan.environments_limit} ambientes por propriedade` : 'Ambientes ilimitados'}
                           </span>
                         </div>
-                      </>
-                    )}
-                  </div>
+                        
+                        <div className="flex items-center gap-3">
+                          <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
+                          <span className="text-white">
+                            {plan.photos_per_environment_limit} fotos por ambiente
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
+                          <span className="text-white">
+                            Análise com IA
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
+                          <span className="text-white">
+                            Relatórios comparativos
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
+                          <span className="text-white">
+                            Exportação em PDF
+                          </span>
+                        </div>
 
-                  {/* Action Button */}
-                  <div className="text-center">
-                    {isCurrentPlan ? (
-                      <button
-                        disabled
-                        className="w-full bg-green-500/20 text-green-400 border border-green-400 py-3 px-6 rounded-lg font-semibold cursor-not-allowed"
-                      >
-                        Plano Atual
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleUpgrade(plan.id)}
-                        disabled={upgradeLoading && selectedPlan === plan.id}
-                        className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 ${
-                          plan.name === 'Gratuito' 
-                            ? 'bg-white/10 text-white border border-white/20 hover:bg-white/20'
-                            : `bg-gradient-to-r ${getPlanColor(plan.name)} text-white hover:shadow-lg hover:shadow-blue-500/25`
-                        } ${upgradeLoading && selectedPlan === plan.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        {upgradeLoading && selectedPlan === plan.id ? 'Processando...' : 
-                         plan.name === 'Gratuito' ? 'Fazer Downgrade' : 'Escolher Plano'}
-                      </button>
-                    )}
+                        {plan.name === 'Premium' && (
+                          <>
+                            <div className="flex items-center gap-3">
+                              <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
+                              <span className="text-white">
+                                Suporte prioritário
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
+                              <span className="text-white">
+                                API para integrações
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="text-center">
+                        {isCurrentPlan ? (
+                          <button
+                            disabled
+                            className="w-full bg-green-500/20 text-green-400 border border-green-400 py-3 px-6 rounded-lg font-semibold cursor-not-allowed"
+                          >
+                            Plano Atual
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleUpgrade(plan.id)}
+                            disabled={upgradeLoading && selectedPlan === plan.id}
+                            className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 ${
+                              plan.name === 'Gratuito' 
+                                ? 'bg-white/10 text-white border border-white/20 hover:bg-white/20'
+                                : `bg-gradient-to-r ${getPlanColor(plan.name)} text-white hover:shadow-lg hover:shadow-blue-500/25`
+                            } ${upgradeLoading && selectedPlan === plan.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            {upgradeLoading && selectedPlan === plan.id ? 'Processando...' : 
+                             plan.name === 'Gratuito' ? 'Fazer Downgrade' : 'Escolher Plano'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
+                );
+              })}
+            </div>
+
+            {/* FAQ/Benefits for Plans */}
+            <div className="mt-16 text-center">
+              <h2 className="text-2xl font-bold text-white mb-4">
+                Por que escolher um plano pago?
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                <div className="bg-white/5 rounded-lg p-6">
+                  <CreditCard className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                  <h3 className="text-white font-semibold mb-2">Sem Limites</h3>
+                  <p className="text-white/60 text-sm">
+                    Gerencie quantas propriedades precisar sem restrições
+                  </p>
+                </div>
+                <div className="bg-white/5 rounded-lg p-6">
+                  <Zap className="w-12 h-12 text-green-400 mx-auto mb-4" />
+                  <h3 className="text-white font-semibold mb-2">Mais Eficiência</h3>
+                  <p className="text-white/60 text-sm">
+                    Análises completas com IA e relatórios profissionais
+                  </p>
+                </div>
+                <div className="bg-white/5 rounded-lg p-6">
+                  <Crown className="w-12 h-12 text-purple-400 mx-auto mb-4" />
+                  <h3 className="text-white font-semibold mb-2">Suporte Premium</h3>
+                  <p className="text-white/60 text-sm">
+                    Atendimento prioritário e recursos exclusivos
+                  </p>
                 </div>
               </div>
-            );
-          })}
-        </div>
-
-        {/* FAQ/Benefits */}
-        <div className="mt-16 text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">
-            Por que escolher um plano pago?
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <div className="bg-white/5 rounded-lg p-6">
-              <CreditCard className="w-12 h-12 text-blue-400 mx-auto mb-4" />
-              <h3 className="text-white font-semibold mb-2">Sem Limites</h3>
-              <p className="text-white/60 text-sm">
-                Gerencie quantas propriedades precisar sem restrições
+            </div>
+          </>
+        ) : (
+          <div>
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-white mb-4">
+                💳 Sistema Pay-per-use
+              </h2>
+              <p className="text-white/80 max-w-2xl mx-auto">
+                Pague apenas pelas propriedades que você precisa vistoriar. 
+                Cada crédito permite uma vistoria completa (entrada + saída).
               </p>
             </div>
-            <div className="bg-white/5 rounded-lg p-6">
-              <Zap className="w-12 h-12 text-green-400 mx-auto mb-4" />
-              <h3 className="text-white font-semibold mb-2">Mais Eficiência</h3>
-              <p className="text-white/60 text-sm">
-                Análises completas com IA e relatórios profissionais
-              </p>
-            </div>
-            <div className="bg-white/5 rounded-lg p-6">
-              <Crown className="w-12 h-12 text-purple-400 mx-auto mb-4" />
-              <h3 className="text-white font-semibold mb-2">Suporte Premium</h3>
-              <p className="text-white/60 text-sm">
-                Atendimento prioritário e recursos exclusivos
-              </p>
+            
+            <CreditPackages 
+              onSelectPackage={(pkg) => {
+                // TODO: Implement credit package purchase
+                addToast(`Compra de ${pkg.name} em desenvolvimento!`, 'success');
+              }}
+              loading={false}
+            />
+            
+            {/* Benefits for Credits */}
+            <div className="mt-16 text-center">
+              <h2 className="text-2xl font-bold text-white mb-4">
+                🎯 Vantagens do Pay-per-use
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                <div className="bg-white/5 rounded-lg p-6">
+                  <Star className="w-12 h-12 text-green-400 mx-auto mb-4" />
+                  <h3 className="text-white font-semibold mb-2">Flexibilidade Total</h3>
+                  <p className="text-white/60 text-sm">
+                    Pague apenas quando precisar, sem compromisso mensal
+                  </p>
+                </div>
+                <div className="bg-white/5 rounded-lg p-6">
+                  <CreditCard className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                  <h3 className="text-white font-semibold mb-2">Créditos Eternos</h3>
+                  <p className="text-white/60 text-sm">
+                    Seus créditos nunca vencem e ficam sempre disponíveis
+                  </p>
+                </div>
+                <div className="bg-white/5 rounded-lg p-6">
+                  <Zap className="w-12 h-12 text-purple-400 mx-auto mb-4" />
+                  <h3 className="text-white font-semibold mb-2">Economia Smart</h3>
+                  <p className="text-white/60 text-sm">
+                    Pacotes com desconto: quanto mais compra, mais economiza
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Payment Modal */}
