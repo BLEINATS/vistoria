@@ -30,7 +30,11 @@ export const useSubscription = () => {
         throw error;
       }
 
-      if (data) {
+      // Handle both error case and empty results case with fallback plans
+      if (!data || data.length === 0) {
+        console.log('No active plans found, using fallback plans');
+        setPlans(getDefaultPlans());
+      } else {
         setPlans(data.map(plan => ({
           id: plan.id,
           name: plan.name,
@@ -49,24 +53,55 @@ export const useSubscription = () => {
     } catch (err) {
       console.error('Error fetching plans:', err);
       // Fallback to basic plans if database is unavailable
-      setPlans([
-        {
-          id: 'fallback-gratuito',
-          name: 'Gratuito',
-          price: 0,
-          currency: 'BRL',
-          interval_type: 'month',
-          properties_limit: 1,
-          environments_limit: 3,
-          photos_per_environment_limit: 5,
-          ai_analysis_limit: null,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ]);
+      setPlans(getDefaultPlans());
     }
   }, []);
+
+  // Default fallback plans to ensure the app always has plans to display
+  const getDefaultPlans = () => ([
+    {
+      id: 'fallback-gratuito',
+      name: 'Gratuito',
+      price: 0,
+      currency: 'BRL',
+      interval_type: 'month' as const,
+      properties_limit: 1,
+      environments_limit: 3,
+      photos_per_environment_limit: 5,
+      ai_analysis_limit: null,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    {
+      id: 'fallback-basico',
+      name: 'Básico',
+      price: 97,
+      currency: 'BRL',
+      interval_type: 'month' as const,
+      properties_limit: null,
+      environments_limit: null,
+      photos_per_environment_limit: 20,
+      ai_analysis_limit: null,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    {
+      id: 'fallback-profissional',
+      name: 'Profissional',
+      price: 147,
+      currency: 'BRL',
+      interval_type: 'month' as const,
+      properties_limit: null,
+      environments_limit: null,
+      photos_per_environment_limit: null,
+      ai_analysis_limit: null,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+  ]);
 
   // Fetch user's current limits and usage from server-side database
   const fetchUserLimits = useCallback(async () => {
@@ -261,9 +296,11 @@ export const useSubscription = () => {
     }
   }, [user, fetchCurrentSubscription]);
 
-  // Set loading to false when data is ready
+  // Set loading to false when data is ready (fixed loading logic)
   useEffect(() => {
-    if (plans.length > 0 && (userLimits !== null || !user)) {
+    // Always set loading to false after plans are fetched and userLimits are ready
+    // Don't depend on plans.length since empty results are valid
+    if (plans !== null && (userLimits !== null || !user)) {
       setLoading(false);
     }
   }, [plans, userLimits, user]);
