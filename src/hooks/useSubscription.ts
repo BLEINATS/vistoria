@@ -23,22 +23,34 @@ export const useSubscription = () => {
       ai_analysis_limit: null
     },
     'Básico': {
-      properties_limit: 2,
+      properties_limit: 5,
       environments_limit: null,
-      photos_per_environment_limit: 5,
+      photos_per_environment_limit: 10,
       ai_analysis_limit: null
     },
-    'Premium': {
+    'Profissional': {
+      properties_limit: 10,
+      environments_limit: null,
+      photos_per_environment_limit: 15,
+      ai_analysis_limit: null
+    },
+    'Empresarial': {
       properties_limit: null,
       environments_limit: null,
-      photos_per_environment_limit: 5,
+      photos_per_environment_limit: null,
+      ai_analysis_limit: null
+    },
+    'Pay-per-use': {
+      properties_limit: null, // Based on credits purchased
+      environments_limit: null,
+      photos_per_environment_limit: 10,
       ai_analysis_limit: null
     }
   };
 
   // Use static plans to prevent database cache issues
   const fetchPlans = useCallback(async () => {
-    // Temporarily using static data to prevent cache issues
+    // Updated plans according to monetization strategy
     setPlans([
       {
         id: '7d66e56a-bea2-4c10-b9ca-0f23f2231a56',
@@ -57,12 +69,12 @@ export const useSubscription = () => {
       {
         id: 'f9de3820-0950-4370-99e2-f3bf517ba85d',
         name: 'Básico',
-        price: 47.00,
+        price: 97.00,
         currency: 'BRL',
         interval_type: 'month',
-        properties_limit: 2,
+        properties_limit: 5,
         environments_limit: null,
-        photos_per_environment_limit: 5,
+        photos_per_environment_limit: 10,
         ai_analysis_limit: null,
         is_active: true,
         created_at: new Date().toISOString(),
@@ -70,13 +82,27 @@ export const useSubscription = () => {
       },
       {
         id: 'd6fa6dd4-bb8c-4461-9172-6d90b4832a43',
-        name: 'Premium',
-        price: 77.00,
+        name: 'Profissional',
+        price: 147.00,
+        currency: 'BRL',
+        interval_type: 'month',
+        properties_limit: 10,
+        environments_limit: null,
+        photos_per_environment_limit: 15,
+        ai_analysis_limit: null,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: 'e8fa7dd5-cc9d-5572-0283-7e91c5943b54',
+        name: 'Empresarial',
+        price: 170.00,
         currency: 'BRL',
         interval_type: 'month',
         properties_limit: null,
         environments_limit: null,
-        photos_per_environment_limit: 5,
+        photos_per_environment_limit: null,
         ai_analysis_limit: null,
         is_active: true,
         created_at: new Date().toISOString(),

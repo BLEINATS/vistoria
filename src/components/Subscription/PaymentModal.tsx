@@ -26,8 +26,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     switch (plan.name) {
       case 'Básico':
         return <Zap className="w-8 h-8 text-blue-500" />;
-      case 'Premium':
+      case 'Profissional':
         return <Crown className="w-8 h-8 text-purple-500" />;
+      case 'Empresarial':
+        return <Crown className="w-8 h-8 text-gold-500" />;
       default:
         return <CreditCard className="w-8 h-8 text-gray-500" />;
     }
