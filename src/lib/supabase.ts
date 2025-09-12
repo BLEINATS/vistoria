@@ -83,7 +83,7 @@ export type Database = {
           responsible_name: string;
           company_name: string;
           company_logo_url: string;
-          inspections: jsonb;
+          inspections: any; // JSON type for inspections
         }[];
       };
       get_property_details_by_id: {
@@ -100,7 +100,7 @@ export type Database = {
           responsible_name: string;
           company_name: string;
           company_logo_url: string;
-          inspections: jsonb;
+          inspections: any; // JSON type for inspections
         }[];
       };
     };
