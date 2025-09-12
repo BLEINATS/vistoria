@@ -11,7 +11,7 @@ export const useSubscriptionManagement = () => {
 
   const createSubscription = async (
     plan: SubscriptionPlan,
-    paymentMethod: 'PIX' | 'BOLETO' | 'CREDIT_CARD'
+    paymentMethod: 'BOLETO' | 'CREDIT_CARD'
   ) => {
     if (!user || !user.email || plan.price === 0) {
       return { success: false, message: 'Dados de usuário ou plano inválidos para criar uma assinatura paga.' };
@@ -62,7 +62,7 @@ export const useSubscriptionManagement = () => {
           price_param: plan.price,
           asaas_subscription_id_param: null,
           asaas_customer_id_param: null,
-          status_param: 'active',
+          status_param: 'ACTIVE',
           billing_type_param: 'free'
         });
         
@@ -103,7 +103,7 @@ export const useSubscriptionManagement = () => {
         .from('subscriptions')
         .select('plan_name')
         .eq('user_id', user.id)
-        .eq('status', 'active')
+        .eq('status', 'ACTIVE')
         .single();
 
       if (error && error.code !== 'PGRST116') { // PGRST116 means no rows returned

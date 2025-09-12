@@ -7,7 +7,7 @@ interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   plan: SubscriptionPlan | null;
-  onConfirm: (paymentMethod: 'PIX' | 'BOLETO' | 'CREDIT_CARD') => void;
+  onConfirm: (paymentMethod: 'BOLETO' | 'CREDIT_CARD') => void;
   loading: boolean;
 }
 
@@ -18,7 +18,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   onConfirm,
   loading
 }) => {
-  const [selectedMethod, setSelectedMethod] = useState<'PIX' | 'BOLETO' | 'CREDIT_CARD'>('PIX');
+  const [selectedMethod, setSelectedMethod] = useState<'BOLETO' | 'CREDIT_CARD'>('CREDIT_CARD');
 
   if (!plan) return null;
 
@@ -121,7 +121,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 </h3>
                 
                 <div className="space-y-3">
-                  {['PIX', 'BOLETO', 'CREDIT_CARD'].map((method) => (
+                  {['BOLETO', 'CREDIT_CARD'].map((method) => (
                     <label
                       key={method}
                       className={`flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
@@ -135,7 +135,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                         name="paymentMethod"
                         value={method}
                         checked={selectedMethod === method}
-                        onChange={(e) => setSelectedMethod(e.target.value as 'PIX' | 'BOLETO' | 'CREDIT_CARD')}
+                        onChange={(e) => setSelectedMethod(e.target.value as 'BOLETO' | 'CREDIT_CARD')}
                         className="mt-1"
                       />
                       <div className="flex-1">

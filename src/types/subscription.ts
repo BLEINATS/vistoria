@@ -19,7 +19,7 @@ export interface Subscription {
   plan_id: string;
   asaas_customer_id: string | null;
   asaas_subscription_id: string | null;
-  status: 'active' | 'cancelled' | 'past_due' | 'suspended';
+  status: 'ACTIVE' | 'CANCELLED' | 'PAST_DUE' | 'SUSPENDED';
   current_period_start: string;
   current_period_end: string;
   created_at: string;
@@ -77,7 +77,7 @@ export interface LocalStorageSubscription {
   price: number;
   asaas_subscription_id?: string | null;
   asaas_customer_id?: string | null;
-  status: 'active' | 'cancelled' | 'past_due' | 'suspended';
+  status: 'ACTIVE' | 'CANCELLED' | 'PAST_DUE' | 'SUSPENDED';
   billing_type?: string;
   created_at?: string;
   updated_at?: string;

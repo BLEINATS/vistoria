@@ -212,7 +212,7 @@ export const useSubscription = () => {
         .from('subscriptions')
         .select('*')
         .eq('user_id', user.id)
-        .eq('status', 'active')
+        .eq('status', 'ACTIVE')
         .single();
 
       if (error && error.code !== 'PGRST116') { // PGRST116 means no rows returned
