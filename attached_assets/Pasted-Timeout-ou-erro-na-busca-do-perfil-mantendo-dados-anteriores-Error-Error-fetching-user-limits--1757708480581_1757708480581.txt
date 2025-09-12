@@ -1,0 +1,104 @@
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Error fetching user limits: 
+Object {code: "PGRST202", details: "Searched for the function public.get_user_limits with parameter p_user_id or with a single unnamed…", hint: "Perhaps you meant to call the function public.use_user_credit", message: "Could not find the function public.get_user_limits(p_user_id) in the schema cache"}
+
+Error fetching user limits: 
+Object {code: "PGRST202", details: "Searched for the function public.get_user_limits with parameter p_user_id or with a single unnamed…", hint: "Perhaps you meant to call the function public.use_user_credit", message: "Could not find the function public.get_user_limits(p_user_id) in the schema cache"}
+
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Error fetching user limits: 
+Object {code: "PGRST202", details: "Searched for the function public.get_user_limits with parameter p_user_id or with a single unnamed…", hint: "Perhaps you meant to call the function public.use_user_credit", message: "Could not find the function public.get_user_limits(p_user_id) in the schema cache"}
+
+Error fetching user limits: 
+Object {code: "PGRST202", details: "Searched for the function public.get_user_limits with parameter p_user_id or with a single unnamed…", hint: "Perhaps you meant to call the function public.use_user_credit", message: "Could not find the function public.get_user_limits(p_user_id) in the schema cache"}
+
+Error fetching user limits: 
+Object {code: "PGRST202", details: "Searched for the function public.get_user_limits with parameter p_user_id or with a single unnamed…", hint: "Perhaps you meant to call the function public.use_user_credit", message: "Could not find the function public.get_user_limits(p_user_id) in the schema cache"}
+
+Error fetching user limits: 
+Object {code: "PGRST202", details: "Searched for the function public.get_user_limits with parameter p_user_id or with a single unnamed…", hint: "Perhaps you meant to call the function public.use_user_credit", message: "Could not find the function public.get_user_limits(p_user_id) in the schema cache"}
+
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Error fetching user limits: 
+Object {code: "PGRST202", details: "Searched for the function public.get_user_limits with parameter p_user_id or with a single unnamed…", hint: "Perhaps you meant to call the function public.use_user_credit", message: "Could not find the function public.get_user_limits(p_user_id) in the schema cache"}
+
+Error fetching user limits: 
+Object {code: "PGRST202", details: "Searched for the function public.get_user_limits with parameter p_user_id or with a single unnamed…", hint: "Perhaps you meant to call the function public.use_user_credit", message: "Could not find the function public.get_user_limits(p_user_id) in the schema cache"}
+
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Timeout ou erro na busca do perfil, mantendo dados anteriores: 
+Error {}
+Error fetching user limits: 
+Object {code: "PGRST202", details: "Searched for the function public.get_user_limits with parameter p_user_id or with a single unnamed…", hint: "Perhaps you meant to call the function public.use_user_credit", message: "Could not find the function public.get_user_limits(p_user_id) in the schema cache"}

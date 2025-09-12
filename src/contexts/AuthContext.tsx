@@ -25,10 +25,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (userId: string) => {
+    // VERSÃO 2025-09-12 CORRIGIDA - Se você ainda vê mensagens antigas, limpe o cache!
+    console.info('🆕 AuthContext v2 - fetchProfile desabilitado para correção de loop');
+    return;
+    
+    /* CÓDIGO ORIGINAL COMENTADO PARA DEBUG
     try {
-      // Timeout aumentado para 15 segundos para evitar perda de dados por lentidão
+      // Timeout reduzido para 8 segundos para evitar loops infinitos
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout na busca do perfil')), 15000);
+        setTimeout(() => reject(new Error('Timeout na busca do perfil')), 8000);
       });
       
       const queryPromise = supabase
@@ -41,14 +46,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       if (error && error.code !== 'PGRST116') {
         console.warn('Erro ao buscar perfil, mantendo dados anteriores:', error);
-        // NÃO limpar perfil em caso de erro - manter dados anteriores
-        // setProfile(null); // REMOVIDO para evitar perda de dados
-        
-        // Tentar recuperar do localStorage como fallback
+        // Tentar recuperar do localStorage como fallback apenas uma vez
         const savedProfile = localStorage.getItem(`profile_${userId}`);
-        if (savedProfile && !profile) {
+        if (savedProfile) {
           setProfile(JSON.parse(savedProfile));
         }
+        return; // Sair da função para evitar loop
       } else {
         const newProfile = data ?? null;
         setProfile(newProfile);
@@ -60,16 +63,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     } catch (e) {
       console.warn('Timeout ou erro na busca do perfil, mantendo dados anteriores:', e);
-      // NÃO limpar perfil em caso de timeout - manter dados anteriores
-      // setProfile(null); // REMOVIDO para evitar perda de dados
-      
-      // Tentar recuperar do localStorage como fallback
+      // Tentar recuperar do localStorage como fallback apenas uma vez
       const savedProfile = localStorage.getItem(`profile_${userId}`);
-      if (savedProfile && !profile) {
+      if (savedProfile) {
         setProfile(JSON.parse(savedProfile));
       }
+      return; // Sair da função para evitar loop
     }
-  }, [profile]);
+    */
+  }, []); // REMOVIDO dependência [profile] que estava causando loop infinito
 
   const refetchProfile = useCallback(async () => {
     if (user) {
@@ -92,8 +94,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setProfile(JSON.parse(savedProfile));
           }
           
-          // Depois buscar dados atualizados do banco
-          await fetchProfile(currentUser.id);
+          // TEMPORARIAMENTE DESABILITADO para parar o loop
+          // await fetchProfile(currentUser.id);
         } else {
           setProfile(null);
         }
@@ -113,14 +115,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(currentUser);
         
         if (currentUser) {
-          // Carregar dados do localStorage primeiro para não deixar interface vazia
+          // Apenas carregar do localStorage para evitar loops
           const savedProfile = localStorage.getItem(`profile_${currentUser.id}`);
           if (savedProfile) {
             setProfile(JSON.parse(savedProfile));
           }
-          
-          // Depois buscar dados atualizados do banco
-          await fetchProfile(currentUser.id);
         } else {
           setProfile(null);
         }
@@ -131,7 +130,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, []); // REMOVIDO [fetchProfile] para quebrar o loop definitivamente
 
   const value = {
     user,
