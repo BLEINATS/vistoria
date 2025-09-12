@@ -77,7 +77,7 @@ export const useCredits = () => {
   }, [user]);
 
   // Use credit for a property inspection using server-side validation
-  const useCredit = useCallback(async (propertyId?: string, description?: string): Promise<boolean> => {
+  const useCredit = useCallback(async (_propertyId?: string, _description?: string): Promise<boolean> => {
     if (!user) return false;
 
     try {
