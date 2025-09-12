@@ -111,7 +111,6 @@ export const useSubscription = () => {
       setError(null);
       
       // Get real user limits and usage from database via RPC
-      console.log('🔍 DEBUG: Fetching user limits for user ID:', user.id, 'Email:', user.email);
       const { data, error } = await supabase.rpc('get_user_limits', {
         p_user_id: user.id
       });
@@ -120,8 +119,6 @@ export const useSubscription = () => {
         console.error('Error fetching user limits:', error);
         throw error;
       }
-
-      console.log('📊 DEBUG: RPC response:', data);
 
       if (data && data.length > 0) {
         const userLimitsData = data[0];
