@@ -91,8 +91,8 @@ export const generateComparisonReportHTML = (
   allRooms.forEach(room => {
     const { changedItems, unchangedItems, newItems, missingItems } = getComparisonData(room, entryData, exitData);
     const roomConfig = reportConfig.rooms[room];
-    const entryPhoto = entryData.photos.find(p => p.room === room)?.url || 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/600x400/e2e8f0/4a5568?text=Sem+Foto';
-    const exitPhoto = exitData.photos.find(p => p.room === room)?.url || 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/600x400/e2e8f0/4a5568?text=Sem+Foto';
+    const entryPhoto = entryData.photos.find(p => p.room === room)?.url || 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/600x400/e2e8f0/4a5568?text=Sem+Foto';
+    const exitPhoto = exitData.photos.find(p => p.room === room)?.url || 'https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://img-wrapper.vercel.app/image?url=https://placehold.co/600x400/e2e8f0/4a5568?text=Sem+Foto';
     
     let itemsHtml = '';
 

@@ -44,4 +44,4 @@ Limite: ilimitado/mês
 Recursos Adicionais:
 Tudo do Profissional.
 continua Gratis o mesmo : 1 propriedade
-3 ambientes por propriedade. O sistema ja precisa estar pronto para receber os pagtos pela plataforma asaas que ja temos API instalado no Replit 
+3 ambientes por propriedade. O sistema ja precisa estar pronto para receber os pagtos pela plataforma asaas que ja temos API instalado no Replit
